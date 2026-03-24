@@ -2,45 +2,32 @@
 
 namespace Modules\Organizations\Providers;
 
+use Livewire\Livewire;
+use Modules\Organizations\Http\Livewire\OrganizationCreate;
+use Modules\Organizations\Http\Livewire\OrganizationIndex;
 use Nwidart\Modules\Support\ModuleServiceProvider;
-use Illuminate\Console\Scheduling\Schedule;
 
 class OrganizationsServiceProvider extends ModuleServiceProvider
 {
-    /**
-     * The name of the module.
-     */
     protected string $name = 'Organizations';
 
-    /**
-     * The lowercase version of the module name.
-     */
     protected string $nameLower = 'organizations';
 
-    /**
-     * Command classes to register.
-     *
-     * @var string[]
-     */
-    // protected array $commands = [];
-
-    /**
-     * Provider classes to register.
-     *
-     * @var string[]
-     */
     protected array $providers = [
         EventServiceProvider::class,
         RouteServiceProvider::class,
     ];
 
-    /**
-     * Define module schedules.
-     * 
-     * @param $schedule
-     */
-    // protected function configureSchedules(Schedule $schedule): void
-    // {
-    //     $schedule->command('inspire')->hourly();
-    // }
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->registerLivewireComponents();
+    }
+
+    private function registerLivewireComponents(): void
+    {
+        Livewire::component('organizations.organization-index', OrganizationIndex::class);
+        Livewire::component('organizations.organization-create', OrganizationCreate::class);
+    }
 }

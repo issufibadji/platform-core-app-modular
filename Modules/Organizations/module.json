@@ -1,9 +1,9 @@
 {
     "name": "Organizations",
     "alias": "organizations",
-    "description": "",
-    "keywords": [],
-    "priority": 0,
+    "description": "Platform Core — Organizations module. Provides multi-tenant organization context, user membership, and ownership management.",
+    "keywords": ["core", "organizations", "tenancy", "multi-tenant"],
+    "priority": 10,
     "providers": [
         "Modules\\Organizations\\Providers\\OrganizationsServiceProvider"
     ],

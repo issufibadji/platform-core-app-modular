@@ -16,6 +16,12 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Core')" class="grid">
+                    <flux:sidebar.item icon="building-office" :href="route('core.organizations.index')" :current="request()->routeIs('core.organizations.*')" wire:navigate>
+                        {{ __('Organizations') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
