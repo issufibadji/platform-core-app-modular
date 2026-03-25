@@ -1,0 +1,11 @@
+{
+    "name": "Files",
+    "alias": "files",
+    "description": "Platform-level file upload and attachment foundation.",
+    "keywords": [],
+    "priority": 18,
+    "providers": [
+        "Modules\\Files\\Providers\\FilesServiceProvider"
+    ],
+    "files": []
+}

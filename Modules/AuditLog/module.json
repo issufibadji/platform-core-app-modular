@@ -1,0 +1,11 @@
+{
+    "name": "AuditLog",
+    "alias": "auditlog",
+    "description": "Platform-wide audit trail for administrative and sensitive actions.",
+    "keywords": [],
+    "priority": 16,
+    "providers": [
+        "Modules\\AuditLog\\Providers\\AuditLogServiceProvider"
+    ],
+    "files": []
+}

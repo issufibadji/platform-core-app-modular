@@ -112,16 +112,97 @@ The following modules are currently implemented and live. The remaining modules 
 
 ---
 
+## Settings ✅ LIVE
+
+**Path:** `Modules/Settings/`
+**Priority:** 15
+**Purpose:** Global and organization-scoped key-value configuration store.
+
+**Implemented:**
+
+- `settings` table: `id`, `organization_id` (nullable), `module`, `key`, `value` (text), `type`, `group`, `is_public`, timestamps
+- Unique constraint: `(organization_id, key)`
+- `Setting` model with `typedValue()` method (casts to boolean/integer/float/json/string)
+- `SettingService`: `get(key, default, orgId)`, `set(...)`, `has(key, orgId)`, `forget(key, orgId)`, `all(module, group)`
+- Resolution priority: org-specific → global → default
+- Livewire: `ListSettings` (paginated, search, group filter), `EditSetting` (value, type, group, is_public)
+- Routes: `core.settings.index`, `core.settings.edit`
+- Permissions: `core.settings.view`, `core.settings.update`
+
+**Dependencies:** Organizations (FK on `organization_id`)
+
+---
+
+## AuditLog ✅ LIVE
+
+**Path:** `Modules/AuditLog/`
+**Priority:** 16
+**Purpose:** Platform-wide audit trail for administrative and sensitive actions.
+
+**Implemented:**
+
+- `audit_logs` table: `id`, `user_id`, `event`, `auditable_type`, `auditable_id`, `old_values` (json), `new_values` (json), `url`, `ip_address`, `user_agent`, `tags` (json), timestamps
+- Polymorphic `auditable` relationship
+- `AuditEntry` model with `user()` and `auditable()` relationships
+- `AuditLogger` service: `log()`, `created()`, `updated()`, `deleted()` helpers
+- Livewire: `ListAuditLogs` (paginated, search, event filter)
+- Routes: `core.auditlog.index`
+- Permissions: `core.auditlog.view`
+
+**Usage:** Call `app(AuditLogger::class)->created($model)` after any auditable action.
+
+**Dependencies:** None (custom implementation, no third-party auditing package)
+
+---
+
+## Notifications ✅ LIVE
+
+**Path:** `Modules/Notifications/`
+**Priority:** 17
+**Purpose:** Internal notification centre backed by Laravel's database notification system.
+
+**Implemented:**
+
+- Uses Laravel's built-in `notifications` table (requires `php artisan notifications:table && php artisan migrate`)
+- `ListNotifications` Livewire component: paginated list, unread count badge, mark-read per item, mark-all-read
+- Filter: unread-only toggle
+- Routes: `core.notifications.index`
+- Permissions: `core.notifications.view`
+
+**Notification data convention:** `data['title']` and `data['body']` are rendered in the UI.
+
+**Dependencies:** Laravel's `Notifiable` trait on `App\Models\User` (already present in the starter kit)
+
+---
+
+## Files ✅ LIVE
+
+**Path:** `Modules/Files/`
+**Priority:** 18
+**Purpose:** Platform-level file upload and attachment foundation.
+
+**Implemented:**
+
+- `files` table: `id`, `organization_id`, `disk`, `path`, `original_name`, `mime_type`, `extension`, `size`, `visibility`, `uploaded_by`, `attachable_type`, `attachable_id`, timestamps
+- `File` model with `url()`, `humanSize()`, `uploader()`, `attachable()` helpers
+- `FileService`: `store(UploadedFile, disk, directory, orgId, visibility)`, `attachTo(file, model)`, `delete(file)`
+- Livewire `ListFiles`: paginated, search, delete with confirmation modal
+- Livewire `UploadFile`: Livewire `WithFileUploads`, disk / directory / visibility selection (max 10 MB)
+- Routes: `core.files.index`, `core.files.upload`
+- Permissions: `core.files.view`, `core.files.upload`
+
+> **Note:** For `public` disk web access run `php artisan storage:link` once after deployment.
+
+**Dependencies:** Organizations (FK), Users (FK on `uploaded_by`)
+
+---
+
 ## Planned Modules
 
-The following modules are designed and documented but not yet implemented:
+The following modules are not yet implemented:
 
 | Module | Priority | Description |
 | --- | --- | --- |
-| Settings | 50 | Key-value config at global or organization scope |
-| Notifications | 60 | Multi-channel notification system with user preferences |
-| AuditLog | 70 | Immutable record of significant platform events |
-| Files | 80 | Unified file upload and management layer |
 | Dashboard | 90 | Configurable landing screen with module widgets |
 | FeatureFlags | 100 | Runtime feature toggling per organization |
 

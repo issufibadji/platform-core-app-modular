@@ -51,4 +51,37 @@ return [
             ],
         ],
     ],
+    [
+        'group' => 'System',
+        'items' => [
+            [
+                'label'      => 'Settings',
+                'route'      => 'core.settings.index',
+                'icon'       => 'cog-6-tooth',
+                'permission' => 'core.settings.view',
+                'sort'       => 1,
+            ],
+            [
+                'label'      => 'Audit Log',
+                'route'      => 'core.auditlog.index',
+                'icon'       => 'clipboard-document-list',
+                'permission' => 'core.auditlog.view',
+                'sort'       => 2,
+            ],
+            [
+                'label'      => 'Notifications',
+                'route'      => 'core.notifications.index',
+                'icon'       => 'bell',
+                'permission' => 'core.notifications.view',
+                'sort'       => 3,
+            ],
+            [
+                'label'      => 'Files',
+                'route'      => 'core.files.index',
+                'icon'       => 'paper-clip',
+                'permission' => 'core.files.view',
+                'sort'       => 4,
+            ],
+        ],
+    ],
 ];

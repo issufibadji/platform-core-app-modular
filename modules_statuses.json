@@ -5,5 +5,9 @@
     "Roles": true,
     "Permissions": true,
     "Menu": true,
-    "SharedUI": true
+    "SharedUI": true,
+    "Settings": true,
+    "AuditLog": true,
+    "Notifications": true,
+    "Files": true
 }

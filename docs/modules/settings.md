@@ -1,169 +1,105 @@
-# Module: Settings
+# Settings Module
 
-**Path:** `Modules/Core/Settings/` (planned)
-**Alias:** `settings`
-**Priority:** 50
-**Status:** Planned
+**Path:** `Modules/Settings/`
+**Status:** Live
+**Priority:** 15
 
 ---
 
 ## Purpose
 
-Stores and retrieves typed configuration values at the global level or scoped to a specific organization. Replaces hardcoded config values for anything that administrators need to change at runtime.
+Provides a global and organization-scoped key-value configuration store. Settings can be typed (string, boolean, integer, float, json) and optionally marked as public for unauthenticated access.
 
 ---
 
-## Database Tables
+## Database
 
-### `settings`
+### `settings` table
 
 | Column | Type | Notes |
-|--------|------|-------|
-| `id` | `bigint unsigned` | Primary key |
-| `key` | `varchar(255)` | Dot-notation key: `app.name`, `notifications.email.enabled` |
-| `value` | `text\|null` | Serialized value |
-| `type` | `varchar(50)` | `string`, `boolean`, `integer`, `json` |
-| `scope` | `varchar(50)` | `global` or `organization` |
-| `organization_id` | `bigint unsigned\|null` | Set when scope = `organization` |
-| `created_at` | `timestamp` | |
-| `updated_at` | `timestamp` | |
+| --- | --- | --- |
+| id | bigint | PK |
+| organization_id | bigint nullable | FK → organizations (null = global) |
+| module | string nullable | e.g. `files`, `mail` |
+| key | string | Setting key (unique per org_id) |
+| value | text nullable | Raw stored value |
+| type | string | `string`, `boolean`, `integer`, `float`, `json` |
+| group | string nullable | Logical grouping for display |
+| is_public | boolean | Default false |
+| created_at / updated_at | timestamps | |
 
-Unique constraint: `(key, organization_id)` — one value per key per org (null org_id = global).
-
----
-
-## Models
-
-### `Setting`
-
-```php
-namespace Modules\Core\Settings\Models;
-
-class Setting extends Model
-{
-    protected $fillable = ['key', 'value', 'type', 'scope', 'organization_id'];
-
-    public function getTypedValue(): mixed
-    {
-        return match($this->type) {
-            'boolean' => (bool) $this->value,
-            'integer' => (int) $this->value,
-            'json'    => json_decode($this->value, true),
-            default   => $this->value,
-        };
-    }
-}
-```
+**Unique constraint:** `(organization_id, key)`
 
 ---
 
-## Helper Function
+## Model
 
-```php
-// Global helper
-function setting(string $key, mixed $default = null): mixed
-{
-    $organizationId = auth()->user()?->currentOrganization()?->id;
+`Modules\Settings\Models\Setting`
 
-    // Try organization-scoped first
-    $setting = Setting::query()
-        ->where('key', $key)
-        ->where('organization_id', $organizationId)
-        ->first();
-
-    // Fall back to global
-    $setting ??= Setting::query()
-        ->where('key', $key)
-        ->whereNull('organization_id')
-        ->first();
-
-    return $setting ? $setting->getTypedValue() : $default;
-}
-```
-
-Usage:
-
-```php
-setting('app.name');                           // "Platform Core"
-setting('notifications.email.enabled', true); // true (default if not set)
-setting('app.timezone', 'UTC');
-```
+- `typedValue()` — casts `value` to the correct PHP type based on `type`
+- Scopes: `global()`, `forOrganization($id)`, `forModule($module)`, `forGroup($group)`, `public()`
 
 ---
 
-## Default Settings (Seeded)
+## Service
 
-| Key | Type | Default Value | Scope |
-|-----|------|---------------|-------|
-| `app.name` | string | `"Platform Core"` | global |
-| `app.timezone` | string | `"UTC"` | global |
-| `app.locale` | string | `"en"` | global |
-| `notifications.email.enabled` | boolean | `true` | global |
-| `notifications.email.from_name` | string | `"Platform Core"` | global |
-| `auth.two_factor.enabled` | boolean | `false` | global |
-| `auth.session.lifetime` | integer | `120` | global |
-| `organizations.allow_subdomains` | boolean | `false` | global |
+`Modules\Settings\Services\SettingService`
+
+```php
+// Resolve with fallback: org-specific → global → default
+$value = app(SettingService::class)->get('app.timezone', 'UTC', $orgId);
+
+// Persist
+app(SettingService::class)->set(
+    key: 'app.timezone',
+    value: 'America/New_York',
+    type: 'string',
+    organizationId: null,
+    module: 'core',
+    group: 'locale',
+);
+
+// Check existence
+app(SettingService::class)->has('app.timezone');
+
+// Delete
+app(SettingService::class)->forget('app.timezone');
+
+// All global settings
+app(SettingService::class)->all(module: 'core', group: 'locale');
+```
 
 ---
 
 ## Routes
 
-### Web
+| Name | Method | URL | Description |
+| --- | --- | --- | --- |
+| `core.settings.index` | GET | `/core/settings` | List all global settings |
+| `core.settings.edit` | GET | `/core/settings/{setting}` | Edit a setting |
 
-| Method | URI | Component | Route Name |
-|--------|-----|-----------|------------|
-| GET | `/settings` | `GeneralSettings` | `settings.general` |
-| GET | `/settings/appearance` | `AppearanceSettings` | `settings.appearance` |
-| GET | `/settings/notifications` | `NotificationSettings` | `settings.notifications` |
+---
+
+## Livewire Components
+
+| Component | Tag | Description |
+| --- | --- | --- |
+| `ListSettings` | `settings.list-settings` | Paginated list with search and group filter |
+| `EditSetting` | `settings.edit-setting` | Edit value, type, group, is_public |
 
 ---
 
 ## Permissions
 
-| Permission String | Description |
-|-------------------|-------------|
-| `core.settings.manage` | View and update platform settings |
+| Permission | Description |
+| --- | --- |
+| `core.settings.view` | View the settings list and edit form |
+| `core.settings.update` | Save changes to settings |
 
 ---
 
-## Livewire Screens
+## Limitations / Next Steps
 
-### `GeneralSettings`
-Form for `app.name`, `app.timezone`, `app.locale`. Organization admins see this for their scoped overrides.
-
-### `AppearanceSettings`
-Controls logo, color theme, and custom CSS. Backed by settings keys under `appearance.*`.
-
-### `NotificationSettings`
-Toggle email/in-app channels. Configure `notifications.email.*` keys.
-
----
-
-## Module Settings Registration
-
-Modules declare their settings in a registration array (similar to Menu):
-
-```php
-// In NotificationsServiceProvider::boot()
-app(SettingsRegistrar::class)->register([
-    ['key' => 'notifications.email.enabled',   'type' => 'boolean', 'default' => true],
-    ['key' => 'notifications.email.from_name', 'type' => 'string',  'default' => 'Platform Core'],
-]);
-```
-
-This ensures settings are seeded and appear in the settings UI grouped by module.
-
----
-
-## Dependencies
-
-- Organizations (for org-scoped overrides)
-
----
-
-## Next Improvements
-
-- Settings schema validation (allowed values, min/max for integers)
-- Settings export/import (JSON)
-- Settings change audit via AuditLog module
-- Cached settings resolution (avoid N queries per request)
+- UI does not support creating settings from scratch — settings are expected to be seeded or created programmatically
+- No per-organization UI yet (only global settings shown)
+- No audit integration hook yet

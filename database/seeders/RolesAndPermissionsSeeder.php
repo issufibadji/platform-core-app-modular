@@ -43,6 +43,20 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Menu
             'core.menu.view',
+
+            // Settings
+            'core.settings.view',
+            'core.settings.update',
+
+            // AuditLog
+            'core.auditlog.view',
+
+            // Notifications
+            'core.notifications.view',
+
+            // Files
+            'core.files.view',
+            'core.files.upload',
         ];
 
         foreach ($permissions as $name) {
@@ -61,12 +75,16 @@ class RolesAndPermissionsSeeder extends Seeder
         // super-admin gets everything
         $superAdmin->syncPermissions(Permission::all());
 
-        // owner gets org + user management
+        // owner gets org + user management + settings + files
         $owner->syncPermissions([
             'core.organizations.view', 'core.organizations.create',
             'core.organizations.update', 'core.organizations.delete',
             'core.users.view', 'core.users.create', 'core.users.update',
             'core.roles.view', 'core.permissions.view', 'core.menu.view',
+            'core.settings.view', 'core.settings.update',
+            'core.auditlog.view',
+            'core.notifications.view',
+            'core.files.view', 'core.files.upload',
         ]);
 
         // manager gets most of owner minus delete
