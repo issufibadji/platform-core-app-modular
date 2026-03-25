@@ -1,6 +1,6 @@
 {
-    "name": "nwidart/organizations",
-    "description": "",
+    "name": "platform-core/organizations",
+    "description": "Platform Core — Organizations module",
     "authors": [
         {
             "name": "Nicolas Widart",

@@ -1,7 +1,7 @@
 {
     "name": "Organizations",
     "alias": "organizations",
-    "description": "",
+    "description": "Multi-tenant organization management — the foundational Core module.",
     "keywords": [],
     "priority": 0,
     "providers": [
