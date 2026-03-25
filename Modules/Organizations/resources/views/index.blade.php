@@ -1,5 +1,5 @@
-<x-organizations::layouts.master>
-    <h1>Hello World</h1>
-
-    <p>Module: {!! config('organizations.name') !!}</p>
-</x-organizations::layouts.master>
+<x-layouts::app :title="__('Organizations')">
+    <flux:main>
+        <livewire:organizations.list-organizations />
+    </flux:main>
+</x-layouts::app>

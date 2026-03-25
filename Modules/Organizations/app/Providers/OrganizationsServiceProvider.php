@@ -2,11 +2,10 @@
 
 namespace Modules\Organizations\Providers;
 
-use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
-use Nwidart\Modules\Support\ModuleServiceProvider;
 use Modules\Organizations\Http\Livewire\CreateOrganization;
 use Modules\Organizations\Http\Livewire\ListOrganizations;
+use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class OrganizationsServiceProvider extends ModuleServiceProvider
 {
@@ -28,7 +27,7 @@ class OrganizationsServiceProvider extends ModuleServiceProvider
 
     protected function registerLivewireComponents(): void
     {
-        Livewire::component('organizations::list-organizations', ListOrganizations::class);
-        Livewire::component('organizations::create-organization', CreateOrganization::class);
+        Livewire::component('organizations.list-organizations', ListOrganizations::class);
+        Livewire::component('organizations.create-organization', CreateOrganization::class);
     }
 }

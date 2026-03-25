@@ -21,6 +21,7 @@ class ListOrganizations extends Component
     public string $status = '';
 
     public bool $confirmingDelete = false;
+
     public ?int $deletingId = null;
 
     public function updatedSearch(): void
@@ -61,13 +62,11 @@ class ListOrganizations extends Component
         $this->confirmingDelete = false;
     }
 
-    public function delete(OrganizationService $service): void
+    public function delete(): void
     {
         $organization = Organization::findOrFail($this->deletingId);
-        $service->delete($organization);
-
+        app(OrganizationService::class)->delete($organization);
         $this->cancelDelete();
-        $this->dispatch('organization-deleted');
     }
 
     public function render()
