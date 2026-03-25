@@ -1,160 +1,168 @@
 # Module: SharedUI
 
-**Path:** `Modules/Core/SharedUI/` (planned)
-**Alias:** `shared_ui`
-**Priority:** 70
-**Status:** Planned
+**Path:** `Modules/SharedUI/`
+**Alias:** `sharedui`
+**Priority:** 40
+**Status:** ✅ Live
 
 ---
 
 ## Purpose
 
-SharedUI is a pure UI module — no database tables, no business logic. It provides the base authenticated layout and a library of reusable Blade/Livewire/Flux components that all other modules use for their screens.
-
-Without SharedUI, every module would implement its own layout and duplicate table, modal, and form components. SharedUI enforces visual and structural consistency across the entire platform.
+Pure UI module — no database tables, no business logic. Provides a library of reusable anonymous Blade components that all other modules use for their screens. Enforces visual and structural consistency across the platform.
 
 ---
 
 ## No Database Tables
 
-SharedUI has no migrations. It is composed entirely of Blade components, Livewire components, and layout files.
+SharedUI has no migrations.
 
 ---
 
-## Layouts
+## Component Registration
 
-### `authenticated`
-
-The primary authenticated layout. Wraps every admin screen.
-
-```
-┌─────────────────────────────────────────────┐
-│  Topbar: Logo | Search | Notifications | User│
-├──────────────┬──────────────────────────────┤
-│              │                              │
-│   Sidebar    │      Page Content Area       │
-│   (Menu)     │      (slot)                  │
-│              │                              │
-└──────────────┴──────────────────────────────┘
-```
-
-Usage in a Livewire component:
-
-```blade
-<x-shared-ui::layouts.authenticated :title="'Organizations'">
-    <x-shared-ui::page-header title="Organizations" :breadcrumbs="$breadcrumbs" />
-    <!-- page content -->
-</x-shared-ui::layouts.authenticated>
-```
-
----
-
-## Component Library
-
-### Layout Components
-
-| Component | Description |
-|-----------|-------------|
-| `<x-shared-ui::layouts.authenticated>` | Main page wrapper with sidebar + topbar |
-| `<x-shared-ui::page-header>` | Page title + breadcrumbs + optional action button |
-| `<x-shared-ui::card>` | Bordered content card with optional header/footer |
-
-### Data Components
-
-| Component | Description |
-|-----------|-------------|
-| `<x-shared-ui::table>` | Sortable, paginated data table |
-| `<x-shared-ui::table.column>` | Column definition with optional sort |
-| `<x-shared-ui::table.row>` | Table row with slot for cells |
-| `<x-shared-ui::empty-state>` | Empty state illustration + message + CTA |
-| `<x-shared-ui::badge>` | Colored status badge (Active, Suspended, etc.) |
-| `<x-shared-ui::pagination>` | Paginator that wraps Laravel's paginator |
-
-### Form Components
-
-| Component | Description |
-|-----------|-------------|
-| `<x-shared-ui::input>` | Text input with label, error, and help text |
-| `<x-shared-ui::select>` | Dropdown select |
-| `<x-shared-ui::toggle>` | Boolean toggle switch |
-| `<x-shared-ui::textarea>` | Multi-line text |
-| `<x-shared-ui::date-picker>` | Date input with calendar popup |
-| `<x-shared-ui::file-upload>` | File upload area with drag-and-drop |
-| `<x-shared-ui::form-section>` | Groups related form fields with a heading |
-
-### Feedback Components
-
-| Component | Description |
-|-----------|-------------|
-| `<x-shared-ui::modal>` | Slide-over or centered modal dialog |
-| `<x-shared-ui::confirm-dialog>` | Confirmation modal with destructive action warning |
-| `<x-shared-ui::toast>` | Flash notification (success, error, warning) |
-| `<x-shared-ui::alert>` | Inline alert banner |
-| `<x-shared-ui::loading>` | Skeleton loading placeholder |
-
-### Navigation Components
-
-| Component | Description |
-|-----------|-------------|
-| `<x-shared-ui::app-sidebar>` | Sidebar using Menu module's resolver |
-| `<x-shared-ui::topbar>` | Top navigation bar |
-| `<x-shared-ui::breadcrumbs>` | Breadcrumb trail |
-| `<x-shared-ui::tab-bar>` | Horizontal tab navigation within a page |
-
----
-
-## Using Flux
-
-SharedUI wraps [Livewire Flux](https://fluxui.dev/) components. Flux provides the low-level primitives (buttons, inputs, dropdowns); SharedUI adds platform-specific compositions and naming conventions on top.
-
-Direct Flux usage in module views is acceptable for simple cases. SharedUI components are preferred when a pattern repeats across modules.
-
----
-
-## Tailwind Configuration
-
-The `tailwind.config.js` must scan SharedUI views:
-
-```js
-content: [
-    './Modules/Core/SharedUI/resources/views/**/*.blade.php',
-    './Modules/**/resources/views/**/*.blade.php',
-    './vendor/livewire/flux/stubs/**/*.blade.php',
-    // ...
-]
-```
-
----
-
-## Service Provider Registration
+`SharedUIServiceProvider` registers components as anonymous components under the `ui` prefix:
 
 ```php
-// Modules/Core/SharedUI/Providers/SharedUIServiceProvider.php
-
 public function boot(): void
 {
-    $this->loadViewsFrom(__DIR__ . '/../resources/views', 'shared-ui');
-
-    Blade::componentNamespace(
-        'Modules\\Core\\SharedUI\\View\\Components',
-        'shared-ui'
+    parent::boot();
+    Blade::anonymousComponentPath(
+        module_path('SharedUI', '/resources/views/components'),
+        'ui'
     );
 }
 ```
+
+Usage in any Blade view: `<x-ui::component-name />` (double colon for anonymous component namespaces).
+
+---
+
+## Available Components
+
+### `<x-ui::page-header>`
+
+Page title bar with optional description, back button, and actions slot.
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `title` | string | required | Page heading |
+| `description` | string\|null | null | Subtitle below title |
+| `backRoute` | string\|null | null | Named route for back button |
+| `backLabel` | string | `'Back'` | Back button label |
+
+**Slots:** `$actions` — rendered as a flex row on the right.
+
+**Example:**
+
+```blade
+<x-ui::page-header title="Organizations" description="Manage your organizations">
+    <x-slot:actions>
+        <flux:button href="{{ route('core.organizations.create') }}" wire:navigate>New</flux:button>
+    </x-slot:actions>
+</x-ui::page-header>
+```
+
+---
+
+### `<x-ui::card>`
+
+Bordered content card.
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `title` | string\|null | null | Optional card heading |
+| `padding` | string | `'p-6'` | Tailwind padding class |
+
+**Example:**
+
+```blade
+<x-ui::card title="Details">
+    <p>Content here</p>
+</x-ui::card>
+```
+
+---
+
+### `<x-ui::empty-state>`
+
+Centered empty-state message for empty lists.
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `title` | string | required | Primary message |
+| `description` | string\|null | null | Secondary text |
+
+**Slots:** `$actions` — optional CTA below the description.
+
+**Example:**
+
+```blade
+<x-ui::empty-state title="No organizations yet" description="Create your first organization to get started.">
+    <x-slot:actions>
+        <flux:button href="{{ route('core.organizations.create') }}" wire:navigate>Create</flux:button>
+    </x-slot:actions>
+</x-ui::empty-state>
+```
+
+---
+
+### `<x-ui::alert>`
+
+Inline alert banner with four severity levels.
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `type` | string | `'info'` | `info`, `success`, `warning`, `error` |
+| `message` | string\|null | null | Alert text (or use default slot) |
+
+**Example:**
+
+```blade
+<x-ui::alert type="success" message="Organization saved successfully." />
+<x-ui::alert type="error">Something went wrong.</x-ui::alert>
+```
+
+---
+
+## Component Source Files
+
+All components live in `Modules/SharedUI/resources/views/components/`:
+
+| File | Component tag |
+| --- | --- |
+| `page-header.blade.php` | `<x-ui::page-header>` |
+| `card.blade.php` | `<x-ui::card>` |
+| `empty-state.blade.php` | `<x-ui::empty-state>` |
+| `alert.blade.php` | `<x-ui::alert>` |
+
+---
+
+## Styling
+
+Components use Tailwind CSS utility classes and `flux:*` components (Livewire Flux) for headings and text. Dark mode is supported via `dark:` variants throughout.
 
 ---
 
 ## Dependencies
 
-- Menu module (sidebar uses `MenuResolver`)
-- No data dependencies
+- Livewire Flux (`flux:heading`, `flux:text` components used internally)
+- Tailwind CSS v4
 
 ---
 
 ## Next Improvements
 
-- Dark mode support across all components
-- RTL (right-to-left) layout support
-- Storybook or visual component catalogue
-- Accessibility audit (ARIA labels, keyboard navigation)
-- Print-friendly CSS for reports
+- Data table component (sortable, paginated)
+- Modal / confirmation dialog component
+- Toast notification component
+- Form field components (input, select, toggle)
+- Loading skeleton component

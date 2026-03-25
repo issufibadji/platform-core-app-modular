@@ -1,0 +1,11 @@
+{
+    "name": "Menu",
+    "alias": "menu",
+    "description": "Config-driven dynamic navigation — filters items by user permissions.",
+    "keywords": [],
+    "priority": 5,
+    "providers": [
+        "Modules\\Menu\\Providers\\MenuServiceProvider"
+    ],
+    "files": []
+}

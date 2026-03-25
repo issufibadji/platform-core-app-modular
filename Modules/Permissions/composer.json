@@ -1,0 +1,12 @@
+{
+    "name": "platform-core/permissions",
+    "description": "Platform Core — Permissions module",
+    "authors": [{"name": "Platform Core", "email": "dev@platform.local"}],
+    "extra": {"laravel": {"providers": [], "aliases": {}}},
+    "autoload": {
+        "psr-4": {"Modules\\Permissions\\": "app/"}
+    },
+    "autoload-dev": {
+        "psr-4": {"Modules\\Permissions\\Tests\\": "tests/"}
+    }
+}

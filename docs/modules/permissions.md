@@ -1,136 +1,151 @@
 # Module: Permissions
 
-**Path:** `Modules/Core/Permissions/` (planned)
+**Path:** `Modules/Permissions/`
 **Alias:** `permissions`
-**Priority:** 40
-**Status:** Planned
+**Priority:** 21
+**Status:** ✅ Live
 
 ---
 
 ## Purpose
 
-Defines all platform permissions and provides the mechanism to assign them to roles. Integrates with Laravel's `Gate` so that `$user->can('core.organizations.view')` works everywhere.
-
-Permissions are seeded — they are not user-created. Each module registers its own permissions during boot. The Permissions module assembles them into the `permissions` table and makes them assignable.
+Read-only UI for browsing all platform permissions, grouped by module. Permissions are not created via this UI — they are seeded by `RolesAndPermissionsSeeder`. The Permissions module exposes them for inspection and makes them assignable through the Roles module UI.
 
 ---
 
 ## Database Tables
 
-### `permissions`
+All tables are owned by **spatie/laravel-permission** — the Permissions module has no migrations.
+
+### `permissions` (spatie)
 
 | Column | Type | Notes |
-|--------|------|-------|
-| `id` | `bigint unsigned` | Primary key |
-| `name` | `varchar(255)` | Unique string key: `core.organizations.view` |
-| `description` | `varchar(255)\|null` | Human-readable description |
-| `module` | `varchar(100)` | Which module owns this permission |
-| `created_at` | `timestamp` | |
-| `updated_at` | `timestamp` | |
-
-### `role_permission` (pivot)
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `role_id` | `bigint unsigned` | FK → roles.id |
-| `permission_id` | `bigint unsigned` | FK → permissions.id |
+| --- | --- | --- |
+| `id` | bigint unsigned | Primary key |
+| `name` | varchar(255) | Unique string key: `core.organizations.view` |
+| `guard_name` | varchar(255) | Guard (`web`) |
+| `created_at` | timestamp | |
+| `updated_at` | timestamp | |
 
 ---
 
 ## Models
 
-### `Permission`
-
-```php
-namespace Modules\Core\Permissions\Models;
-
-class Permission extends Model
-{
-    protected $fillable = ['name', 'description', 'module'];
-
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class, 'role_permission');
-    }
-}
-```
+Uses `Spatie\Permission\Models\Permission` directly — no custom model.
 
 ---
 
-## Gate Integration
+## Livewire Components
 
-The Permissions module registers a Gate `before` check that resolves permissions via the `permissions` table:
+### `ListPermissions` (`permissions.list-permissions`)
 
-```php
-Gate::before(function (User $user, string $ability) {
-    // Superadmin bypass
-    if ($user->isSuperAdmin()) return true;
+Groups all permissions by the first segment of their name (the module prefix).
 
-    return $user->roles()
-        ->whereHas('permissions', fn ($q) => $q->where('name', $ability))
-        ->exists();
-});
+**Example grouping:**
+
+```text
+core (15 permissions)
+  ├── core.organizations.view
+  ├── core.organizations.create
+  ├── core.organizations.update
+  ├── core.organizations.delete
+  ├── core.users.view
+  │   ...
+  └── core.menu.view
 ```
 
-Usage anywhere in the app:
+**Registered in** `PermissionsServiceProvider::boot()`:
 
 ```php
-$user->can('core.organizations.create');
-Gate::authorize('core.users.delete', $user);
-// In Blade:
-@can('core.roles.assign') ... @endcan
-// In Livewire:
-$this->authorize('core.settings.manage');
+Livewire::component('permissions.list-permissions', ListPermissions::class);
 ```
-
----
-
-## Permission Registration
-
-Each module registers its permissions via a seeder or service provider:
-
-```php
-// In a module's seeder
-$permissions = [
-    ['name' => 'core.organizations.view',   'module' => 'organizations'],
-    ['name' => 'core.organizations.create', 'module' => 'organizations'],
-    ['name' => 'core.organizations.update', 'module' => 'organizations'],
-    ['name' => 'core.organizations.delete', 'module' => 'organizations'],
-];
-
-foreach ($permissions as $permission) {
-    Permission::firstOrCreate(['name' => $permission['name']], $permission);
-}
-```
-
----
-
-## All Core Permissions
-
-See [naming-conventions.md](../naming-conventions.md#permissions) for the full list of `core.*` permission strings.
 
 ---
 
 ## Routes
 
-### Web
+| Method | URI | Controller action | Route name |
+| --- | --- | --- | --- |
+| GET | `/core/permissions` | `PermissionsController@index` | `core.permissions.index` |
 
-| Method | URI | Component | Route Name |
-|--------|-----|-----------|------------|
-| GET | `/permissions` | `ListPermissions` | `permissions.index` |
+All routes use `auth` + `verified` middleware.
 
-Permissions are not directly editable via UI — they are seeded and assigned to roles via the Roles module.
+---
+
+## Permissions
+
+| Permission | Description |
+| --- | --- |
+| `core.permissions.view` | View permission list |
+| `core.permissions.create` | Create new permissions (seeder only) |
+
+---
+
+## All Seeded Permissions
+
+The following 15 permissions are created by `RolesAndPermissionsSeeder`:
+
+| Permission | Scope |
+| --- | --- |
+| `core.organizations.view` | Organizations |
+| `core.organizations.create` | Organizations |
+| `core.organizations.update` | Organizations |
+| `core.organizations.delete` | Organizations |
+| `core.users.view` | Users |
+| `core.users.create` | Users |
+| `core.users.update` | Users |
+| `core.users.delete` | Users |
+| `core.roles.view` | Roles |
+| `core.roles.create` | Roles |
+| `core.roles.update` | Roles |
+| `core.roles.delete` | Roles |
+| `core.permissions.view` | Permissions |
+| `core.permissions.create` | Permissions |
+| `core.menu.view` | Menu |
+
+---
+
+## Gate Integration
+
+`App\Models\User` has `use HasRoles` from spatie, which registers a Gate `before` hook. Checks work everywhere:
+
+```php
+$user->can('core.organizations.create');
+
+// In Blade:
+@can('core.roles.view') ... @endcan
+
+// In Livewire:
+$this->authorize('core.users.delete');
+```
+
+---
+
+## Menu Entry
+
+Registered in `Modules/Menu/config/menu.php`:
+
+```php
+[
+    'label'      => 'Permissions',
+    'route'      => 'core.permissions.index',
+    'icon'       => 'key',
+    'permission' => 'core.permissions.view',
+    'sort'       => 2,
+],
+```
 
 ---
 
 ## Dependencies
 
-- Roles module (permissions are assigned to roles)
+- spatie/laravel-permission ^6.0
 
 ---
 
 ## Next Improvements
 
-- Permission groups / categories for better UI organization in the role editor
-- Direct user-level permission overrides (override a role's default for a specific user)
-- Wildcard permission matching (e.g., `core.organizations.*`)
+- Gate checks on Livewire methods
+- Permission creation UI (for app modules to register new permissions at runtime)
+- Direct user-level permission overrides (bypassing role)
+- Wildcard permission matching (`core.organizations.*`)

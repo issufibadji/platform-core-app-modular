@@ -2,9 +2,11 @@
 
 The Core platform is built in phases, where each phase delivers a stable, usable set of features before the next phase begins. Later phases depend on earlier ones, so the order is intentional.
 
+**Current status:** Phases 1–4 and Phase 6 (SharedUI) are complete. Phase 5 (Settings) and Phases 7–8 are pending.
+
 ---
 
-## Phase 1 — Organizations
+## Phase 1 — Organizations ✅ Complete
 
 **Goal:** Establish the multi-tenancy foundation. Everything else is scoped to an organization.
 

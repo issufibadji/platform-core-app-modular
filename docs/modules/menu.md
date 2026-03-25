@@ -1,164 +1,160 @@
 # Module: Menu
 
-**Path:** `Modules/Core/Menu/` (planned)
+**Path:** `Modules/Menu/`
 **Alias:** `menu`
-**Priority:** 50
-**Status:** Planned
+**Priority:** 30
+**Status:** ✅ Live
 
 ---
 
 ## Purpose
 
-Provides a dynamic, database-backed navigation menu that reflects the current user's permissions. App modules register their own menu items during boot; the Menu module assembles and renders the final sidebar.
+Provides a config-driven navigation menu filtered by user permissions. The sidebar reads `MenuService::forUser()` to show only the groups and items the current user is allowed to see, based on spatie permission checks.
 
 ---
 
-## Database Tables
+## No Database Tables
 
-### `menu_items`
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `bigint unsigned` | Primary key |
-| `label` | `varchar(255)` | Display text |
-| `icon` | `varchar(100)\|null` | Icon identifier (e.g., Heroicon name) |
-| `route` | `varchar(255)\|null` | Named Laravel route |
-| `url` | `varchar(255)\|null` | External URL (if not a route) |
-| `permission` | `varchar(255)\|null` | Required permission to see this item |
-| `parent_id` | `bigint unsigned\|null` | FK → menu_items.id (nesting) |
-| `module` | `varchar(100)` | Which module registered this item |
-| `order` | `int` | Sort order within the same parent/group |
-| `is_active` | `boolean` | Whether the item is shown at all |
-| `created_at` | `timestamp` | |
-| `updated_at` | `timestamp` | |
+The Menu module is entirely config-driven. There are no migrations. Menu items are defined in `config/menu.php` and filtered at runtime.
 
 ---
 
-## Models
+## Config Structure
 
-### `MenuItem`
+**`Modules/Menu/config/menu.php`** defines an array of groups, each with an array of items:
 
 ```php
-namespace Modules\Core\Menu\Models;
+return [
+    [
+        'group' => 'Platform',
+        'items' => [
+            [
+                'label'      => 'Dashboard',
+                'route'      => 'dashboard',
+                'icon'       => 'home',
+                'permission' => null,       // null = always visible
+                'sort'       => 1,
+            ],
+        ],
+    ],
+    [
+        'group' => 'Core',
+        'items' => [
+            ['label' => 'Organizations', 'route' => 'core.organizations.index', 'icon' => 'building-office-2', 'permission' => 'core.organizations.view', 'sort' => 1],
+            ['label' => 'Users',         'route' => 'core.users.index',         'icon' => 'users',             'permission' => 'core.users.view',         'sort' => 2],
+        ],
+    ],
+    [
+        'group' => 'Access Control',
+        'items' => [
+            ['label' => 'Roles',       'route' => 'core.roles.index',       'icon' => 'shield-check', 'permission' => 'core.roles.view',       'sort' => 1],
+            ['label' => 'Permissions', 'route' => 'core.permissions.index', 'icon' => 'key',          'permission' => 'core.permissions.view', 'sort' => 2],
+        ],
+    ],
+];
+```
 
-class MenuItem extends Model
+---
+
+## MenuService
+
+**`Modules/Menu/app/Services/MenuService.php`**
+
+```php
+class MenuService
 {
-    protected $fillable = ['label', 'icon', 'route', 'url', 'permission', 'parent_id', 'module', 'order', 'is_active'];
-
-    public function children(): HasMany
+    public function forUser(): array
     {
-        return $this->hasMany(MenuItem::class, 'parent_id')->orderBy('order');
+        $groups = config('menu', []);
+
+        return array_values(
+            array_filter(
+                array_map(function (array $group) {
+                    $group['items'] = array_values(
+                        array_filter($group['items'], fn ($item) => $this->canSee($item))
+                    );
+                    return $group;
+                }, $groups),
+                fn ($group) => ! empty($group['items'])
+            )
+        );
     }
 
-    public function parent(): BelongsTo
+    protected function canSee(array $item): bool
     {
-        return $this->belongsTo(MenuItem::class, 'parent_id');
+        if (! auth()->check()) return false;
+        if ($item['permission'] === null) return true;
+
+        try {
+            return auth()->user()->can($item['permission']);
+        } catch (\Throwable) {
+            return true; // graceful fallback when spatie not yet configured
+        }
     }
+}
+```
+
+Groups with no visible items are removed entirely. `permission: null` items are always shown.
+
+---
+
+## Service Provider
+
+`MenuServiceProvider` registers `MenuService` as a singleton and merges the config:
+
+```php
+public function register(): void
+{
+    $this->app->singleton(MenuService::class);
+    $this->mergeConfigFrom(__DIR__ . '/../../config/menu.php', 'menu');
 }
 ```
 
 ---
 
-## Menu Resolution
+## Sidebar Integration
 
-The `MenuResolver` service builds the visible menu for the current user:
+`resources/views/layouts/app/sidebar.blade.php` calls `MenuService` directly:
 
-```php
-class MenuResolver
-{
-    public function forUser(User $user): Collection
-    {
-        return MenuItem::query()
-            ->whereNull('parent_id')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get()
-            ->filter(fn ($item) => $this->userCanSee($user, $item))
-            ->map(fn ($item) => $item->load('children'));
-    }
+```blade
+@php
+    $menuGroups = app(\Modules\Menu\Services\MenuService::class)->forUser();
+@endphp
 
-    private function userCanSee(User $user, MenuItem $item): bool
-    {
-        if (! $item->permission) return true;
-        return $user->can($item->permission);
-    }
-}
+@foreach($menuGroups as $group)
+    <flux:sidebar.group :heading="__($group['group'])" class="grid">
+        @foreach($group['items'] as $item)
+            <flux:sidebar.item
+                :icon="$item['icon']"
+                :href="route($item['route'])"
+                :current="request()->routeIs($item['route'] . '*')"
+                wire:navigate
+            >{{ __($item['label']) }}</flux:sidebar.item>
+        @endforeach
+    </flux:sidebar.group>
+@endforeach
 ```
-
----
-
-## Module Menu Registration
-
-Modules register menu items in their service provider:
-
-```php
-// In OrganizationsServiceProvider::boot()
-app(MenuRegistrar::class)->add([
-    'label'      => 'Organizations',
-    'icon'       => 'building-office',
-    'route'      => 'organizations.index',
-    'permission' => 'core.organizations.view',
-    'module'     => 'organizations',
-    'order'      => 10,
-]);
-```
-
-The `MenuRegistrar` writes to the `menu_items` table (or a runtime registry) during boot.
-
----
-
-## Livewire Components
-
-### `AppSidebar`
-
-Renders the full sidebar navigation. Uses `MenuResolver` to get the user's visible menu. Highlights the active route.
-
-```php
-class AppSidebar extends Component
-{
-    public Collection $items;
-
-    public function mount(): void
-    {
-        $this->items = app(MenuResolver::class)->forUser(auth()->user());
-    }
-
-    public function render(): View
-    {
-        return view('menu::components.app-sidebar');
-    }
-}
-```
-
----
-
-## Routes
-
-### Web
-
-| Method | URI | Component | Route Name |
-|--------|-----|-----------|------------|
-| GET | `/admin/menu` | `ManageMenu` | `menu.manage` |
 
 ---
 
 ## Permissions
 
-| Permission String | Description |
-|-------------------|-------------|
-| `core.menu.manage` | Reorder and toggle menu items |
+| Permission | Description |
+| --- | --- |
+| `core.menu.view` | Required to see menu items (all roles have this) |
 
 ---
 
 ## Dependencies
 
-- Permissions module (for permission-gated visibility)
+- spatie/laravel-permission (for `$user->can()` checks)
 
 ---
 
 ## Next Improvements
 
-- Drag-and-drop reordering in the admin UI
-- Mega menu / multi-column layouts
-- Breadcrumb generation from active menu item path
+- Module-registered menu items (modules add their own items at boot instead of editing the central config)
+- Database-backed items with drag-and-drop reordering in admin UI
+- Nested/hierarchical menu groups
 - Per-organization menu customization
+- Breadcrumb generation from active menu path

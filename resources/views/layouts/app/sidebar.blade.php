@@ -11,17 +11,22 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @php
+                    $menuGroups = app(\Modules\Menu\Services\MenuService::class)->forUser();
+                @endphp
 
-                <flux:sidebar.group :heading="__('Core')" class="grid">
-                    <flux:sidebar.item icon="building-office-2" :href="route('core.organizations.index')" :current="request()->routeIs('core.organizations.*')" wire:navigate>
-                        {{ __('Organizations') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @foreach($menuGroups as $group)
+                    <flux:sidebar.group :heading="__($group['group'])" class="grid">
+                        @foreach($group['items'] as $item)
+                            <flux:sidebar.item
+                                :icon="$item['icon']"
+                                :href="route($item['route'])"
+                                :current="request()->routeIs($item['route'] . '*')"
+                                wire:navigate
+                            >{{ __($item['label']) }}</flux:sidebar.item>
+                        @endforeach
+                    </flux:sidebar.group>
+                @endforeach
             </flux:sidebar.nav>
 
             <flux:spacer />

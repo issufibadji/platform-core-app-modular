@@ -1,4 +1,9 @@
 {
     "Core": true,
-    "Organizations": true
+    "Organizations": true,
+    "Users": true,
+    "Roles": true,
+    "Permissions": true,
+    "Menu": true,
+    "SharedUI": true
 }

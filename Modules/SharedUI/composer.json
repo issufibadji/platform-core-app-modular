@@ -1,0 +1,9 @@
+{
+    "name": "platform-core/sharedui",
+    "description": "Platform Core — SharedUI module",
+    "authors": [{"name": "Platform Core", "email": "dev@platform.local"}],
+    "extra": {"laravel": {"providers": [], "aliases": {}}},
+    "autoload": {
+        "psr-4": {"Modules\\SharedUI\\": "app/"}
+    }
+}

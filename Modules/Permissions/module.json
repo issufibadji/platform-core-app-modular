@@ -1,0 +1,11 @@
+{
+    "name": "Permissions",
+    "alias": "permissions",
+    "description": "Permission management using spatie/laravel-permission.",
+    "keywords": [],
+    "priority": 21,
+    "providers": [
+        "Modules\\Permissions\\Providers\\PermissionsServiceProvider"
+    ],
+    "files": []
+}

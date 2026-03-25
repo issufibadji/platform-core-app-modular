@@ -1,0 +1,11 @@
+{
+    "name": "SharedUI",
+    "alias": "sharedui",
+    "description": "Reusable Blade UI components shared across all Core modules.",
+    "keywords": [],
+    "priority": 1,
+    "providers": [
+        "Modules\\SharedUI\\Providers\\SharedUIServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Users",
+    "alias": "users",
+    "description": "Platform user management — listing, creation and organization assignment.",
+    "keywords": [],
+    "priority": 10,
+    "providers": [
+        "Modules\\Users\\Providers\\UsersServiceProvider"
+    ],
+    "files": []
+}

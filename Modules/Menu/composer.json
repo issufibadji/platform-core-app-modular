@@ -1,0 +1,9 @@
+{
+    "name": "platform-core/menu",
+    "description": "Platform Core — Menu module",
+    "authors": [{"name": "Platform Core", "email": "dev@platform.local"}],
+    "extra": {"laravel": {"providers": [], "aliases": {}}},
+    "autoload": {
+        "psr-4": {"Modules\\Menu\\": "app/"}
+    }
+}

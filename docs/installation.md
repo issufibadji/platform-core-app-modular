@@ -2,12 +2,14 @@
 
 ## Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| PHP | ^8.3 |
-| Composer | ^2.x |
-| Node.js | ^20.x |
-| SQLite / MySQL | any recent |
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| PHP | ^8.3 | |
+| Composer | ^2.x | |
+| Node.js | ^18.x or ^22.x | Node 22.7+ works; Vite 8+ requires Node 22.12+ |
+| SQLite or MySQL | any recent | SQLite default for local dev |
+
+> **Node version note:** The project uses Vite 6.x with `@tailwindcss/vite` v4. Node 22.7 is confirmed working. Do **not** upgrade Vite to v8+ unless Node is upgraded to 22.12+.
 
 ## 1. Clone and Install Dependencies
 
@@ -19,7 +21,7 @@ composer install
 npm install
 ```
 
-The `wikimedia/composer-merge-plugin` is configured to automatically merge all `Modules/*/composer.json` files into the root autoloader. This means module-level dependencies are picked up automatically.
+`wikimedia/composer-merge-plugin` is configured to merge all `Modules/*/composer.json` files into the root autoloader automatically.
 
 ## 2. Environment Setup
 
@@ -28,9 +30,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-### Default `.env` values (development)
-
-The project ships with SQLite as the default database driver:
+**Default `.env` values (development):**
 
 ```env
 APP_NAME="Platform Core"
@@ -39,7 +39,7 @@ APP_DEBUG=true
 APP_URL=http://localhost
 
 DB_CONNECTION=sqlite
-# DB_DATABASE=/absolute/path/to/database.sqlite  # defaults to database/database.sqlite
+# DB_DATABASE=/absolute/path/to/database.sqlite  (defaults to database/database.sqlite)
 
 SESSION_DRIVER=database
 QUEUE_CONNECTION=database
@@ -48,7 +48,7 @@ CACHE_STORE=database
 MAIL_MAILER=log
 ```
 
-For **MySQL** (production or preferred local), replace the DB block:
+For **MySQL** (production or preferred local):
 
 ```env
 DB_CONNECTION=mysql
@@ -76,111 +76,118 @@ Create the database first, then:
 php artisan migrate
 ```
 
-### Seed initial data
+## 4. Install spatie/laravel-permission
+
+The package is declared in `composer.json`. After `composer install`, publish its migration and config:
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
+```
+
+This creates the `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, and `role_has_permissions` tables.
+
+## 5. Seed Initial Data
 
 ```bash
 php artisan db:seed
 ```
 
-> Module-specific seeders are discovered automatically when modules register their `DatabaseSeeder` classes.
+The `DatabaseSeeder` calls `RolesAndPermissionsSeeder`, which:
 
-## 4. Storage Link
+- Creates 15 permissions (`core.organizations.*`, `core.users.*`, `core.roles.*`, `core.permissions.*`, `core.menu.view`)
+- Creates 5 roles: `super-admin`, `owner`, `manager`, `operator`, `viewer`
+- Assigns the `super-admin` role to the first user in the database
 
-Required for file uploads and public storage access:
+> Run `php artisan db:seed --class=RolesAndPermissionsSeeder` at any time to re-sync. The seeder is idempotent (`firstOrCreate`).
 
-```bash
-php artisan storage:link
-```
-
-## 5. Build Assets
+## 6. Build Assets
 
 ```bash
 npm run build       # production build
-npm run dev         # watch mode for development
+npm run dev         # Vite watch mode
 ```
 
-## 6. Start the Development Server
-
-The project ships with a `composer run dev` script that starts all required processes concurrently:
+## 7. Start the Development Server
 
 ```bash
 composer run dev
 ```
 
-This runs:
+This starts concurrently:
+
 - `php artisan serve` — PHP dev server on `http://localhost:8000`
 - `npm run dev` — Vite asset watcher
-- `php artisan queue:listen` — queue worker for jobs/notifications
-- `php artisan pail` — real-time log viewer (Laravel Pail)
+- `php artisan queue:listen` — queue worker
+- `php artisan pail` — real-time log viewer
 
-## 7. Installing nwidart/laravel-modules
-
-Already included in `composer.json`. After a fresh `composer install`, the package is ready. To verify modules are recognized:
+## 8. Verify Modules Are Active
 
 ```bash
 php artisan module:list
 ```
 
-Expected output shows `Core` and `Organizations` as enabled.
+Expected output shows all modules as `Enabled`:
 
-### Module configuration
-
-The modules configuration lives at `config/modules.php` (published by the package). The default module root is `Modules/` in the project root.
-
-## 8. Livewire & Flux
-
-Livewire 4.1 and Livewire Flux 2.12 are installed as Composer packages. No manual publishing is required for basic usage.
-
-For Flux component styles, Tailwind is configured to scan Flux's vendor views:
-
-```js
-// vite.config.js / tailwind.config.js
-content: [
-    './vendor/livewire/flux/stubs/**/*.blade.php',
-    './Modules/**/resources/views/**/*.blade.php',
-    ...
-]
+```text
++---------------+---------+----------+
+| Name          | Status  | Priority |
++---------------+---------+----------+
+| Core          | Enabled | 0        |
+| Organizations | Enabled | 0        |
+| Users         | Enabled | 10       |
+| Roles         | Enabled | 20       |
+| Permissions   | Enabled | 21       |
+| Menu          | Enabled | 30       |
+| SharedUI      | Enabled | 40       |
++---------------+---------+----------+
 ```
 
-## 9. Two-Factor Authentication
+If a module shows `Disabled`:
 
-The project includes Fortify with 2FA columns. The migration `add_two_factor_columns_to_users_table` is included in the base `database/migrations/` folder and runs with the standard `php artisan migrate`.
+```bash
+php artisan module:enable ModuleName
+```
 
 ## Common Setup Issues
 
 ### `Class not found` after adding a module
 
-Run:
 ```bash
 composer dump-autoload -o
 ```
 
-The merge plugin registers module autoloads, but this command ensures everything is indexed.
-
 ### Migrations from modules not running
 
-Ensure modules are enabled:
-```bash
-php artisan module:list
-```
-
-If a module shows as `Disabled`, enable it:
-```bash
-php artisan module:enable ModuleName
-```
+Check `modules_statuses.json` at the project root — all modules must be `true`.
 
 ### Assets not updating
 
-Clear all caches and rebuild:
 ```bash
 php artisan optimize:clear
 npm run build
 ```
 
-### Storage symlink already exists
+### `ViteManifestNotFoundException`
+
+Vite hasn't built yet. Run `npm run build` (production) or `composer run dev` (development).
+
+### `@tailwindcss/vite: Cannot convert undefined or null to object`
+
+This happens when `@tailwindcss/vite@4.1.x` is installed with Vite 5. The project requires Vite 6:
 
 ```bash
-php artisan storage:link --force
+npm install vite@^6.3.0 --save-dev
+npm run dev
+```
+
+### Roles/Permissions tables missing
+
+Run the spatie migration step from section 4 above:
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
 ```
 
 ### SQLite database file not found
@@ -188,5 +195,3 @@ php artisan storage:link --force
 ```bash
 touch database/database.sqlite
 ```
-
-The default `DB_DATABASE` path in `.env.example` points to this relative path.

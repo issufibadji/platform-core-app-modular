@@ -121,3 +121,81 @@ Organizations ──► Users ──► Roles ──► Permissions
 ```
 
 Each layer depends on the one above it. The dependency graph is acyclic by design.
+
+## Livewire Component Pattern in Modules
+
+Livewire v3 (`livewire/livewire ^4.1`) cannot auto-discover components outside its configured namespace (`App\Livewire\`). The following pattern is **required** for all Livewire components inside modules:
+
+### 1. Register with dot notation in the service provider
+
+```php
+// Modules/Organizations/app/Providers/OrganizationsServiceProvider.php
+Livewire::component('organizations.list-organizations', ListOrganizations::class);
+```
+
+Use **dot notation** (`organizations.list-organizations`), never `::` notation.
+
+### 2. Route → Controller → Blade page → `<livewire:>`
+
+Do **not** use `Route::get('/', ListOrganizations::class)` for module components. Use a controller that returns a Blade page view, and embed the component in that view:
+
+```php
+// Route
+Route::get('/', [OrganizationsController::class, 'index'])->name('core.organizations.index');
+
+// Controller
+public function index(): View
+{
+    return view('organizations::index');
+}
+
+// Blade page view (resources/views/index.blade.php)
+<x-layouts::app :title="'Organizations'">
+    <livewire:organizations.list-organizations />
+</x-layouts::app>
+
+// Livewire component view (resources/views/livewire/list-organizations.blade.php)
+<div>
+    {{-- component content, single root element --}}
+</div>
+```
+
+The Blade page view uses the full layout. The Livewire component view has a single `<div>` root with no layout wrapper.
+
+### Why not full-page routing?
+
+`Route::get('/', ListOrganizations::class)` only works when the component class is in a namespace that Livewire has configured for auto-discovery. Module components registered with `Livewire::component()` are name-based, not class-based, and must be embedded via `<livewire:name />`.
+
+## Module Service Provider Structure
+
+Every module's service provider extends `Nwidart\Modules\Support\ServiceProvider\ModuleServiceProvider`:
+
+```php
+class OrganizationsServiceProvider extends ModuleServiceProvider
+{
+    protected array $providers = [
+        EventServiceProvider::class,
+        RouteServiceProvider::class,
+    ];
+
+    public function boot(): void
+    {
+        parent::boot();  // loads views, migrations, config automatically
+        Livewire::component('organizations.list-organizations', ListOrganizations::class);
+    }
+}
+```
+
+`parent::boot()` handles:
+
+- `loadViewsFrom()` using the module alias as namespace
+- `loadMigrationsFrom()` from `database/migrations/`
+- `mergeConfigFrom()` for files in `config/`
+
+Declare the provider in `module.json`:
+
+```json
+{
+    "providers": ["Modules\\Organizations\\Providers\\OrganizationsServiceProvider"]
+}
+```

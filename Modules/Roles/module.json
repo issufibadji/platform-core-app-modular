@@ -1,0 +1,11 @@
+{
+    "name": "Roles",
+    "alias": "roles",
+    "description": "Role management using spatie/laravel-permission.",
+    "keywords": [],
+    "priority": 20,
+    "providers": [
+        "Modules\\Roles\\Providers\\RolesServiceProvider"
+    ],
+    "files": []
+}

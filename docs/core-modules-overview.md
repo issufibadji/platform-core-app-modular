@@ -1,222 +1,128 @@
 # Core Modules Overview
 
-The 12 Core modules form the shared operational backbone of the platform. Every app family built on this platform inherits these modules without reimplementing them.
+The following modules are currently implemented and live. The remaining modules are planned for future phases (see [roadmap.md](roadmap.md)).
 
 ---
 
-## Organizations
+## Organizations ✅ LIVE
 
-**Purpose:** Manages the top-level tenant or account concept. Every user, setting, and resource belongs to an organization.
+**Path:** `Modules/Organizations/`
+**Priority:** 0
+**Purpose:** Multi-tenancy foundation. Manages the top-level account concept.
 
-**Responsibilities:**
-- Create, update, suspend, and archive organizations
-- Manage organization slugs and optional custom domains
-- Resolve the active organization from the request context (subdomain or header)
-- Organization-level settings and metadata
+**Implemented:**
 
-**Main entities:** `Organization`, `OrganizationInvitation`
+- `organizations` table: `id`, `name`, `slug`, `domain`, `status` (enum), `settings_json`, soft deletes
+- `organization_user` pivot: `user_id`, `organization_id`, `is_owner`, `joined_at`
+- Livewire CRUD: List (paginated + search + status filter), Create, Edit
+- `OrganizationStatus` enum with `label()` and `color()` methods
+- `OrganizationService`: `create()`, `update()`, `delete()`
+- Routes: `core.organizations.index`, `core.organizations.create`, `core.organizations.edit`
+- Permissions: `core.organizations.view/create/update/delete`
 
 **Dependencies:** None (foundational module)
 
-**Future use:** Every app family has organizations at its root. ScheduleHub has scheduling organizations; Stocky has inventory organizations; Workforce has employer organizations.
+---
+
+## Users ✅ LIVE
+
+**Path:** `Modules/Users/`
+**Priority:** 10
+**Purpose:** UI for managing `App\Models\User` records.
+
+**Implemented:**
+
+- Livewire CRUD: List (paginated + search), Create/Edit form
+- Role display via spatie `getRoleNames()`
+- Optional organization assignment on create
+- Routes: `core.users.index`, `core.users.create`, `core.users.edit`
+- Permissions: `core.users.view/create/update/delete`
+
+**Dependencies:** Organizations (for `organization_user` pivot)
 
 ---
 
-## Users
+## Roles ✅ LIVE
 
-**Purpose:** Manages user accounts and their membership within organizations.
+**Path:** `Modules/Roles/`
+**Priority:** 20
+**Purpose:** Manage spatie roles and their permission assignments.
 
-**Responsibilities:**
-- User registration, profile management, and deactivation
-- Linking users to one or more organizations
-- User invitation and onboarding flows
-- Two-factor authentication state
-- Profile avatar via Files module
+**Implemented:**
 
-**Main entities:** `User`, `OrganizationUser` (pivot with role context)
+- Livewire List: shows all roles with permission count and user count (`withCount`)
+- Livewire Create/Edit: create role, assign permissions grouped by `module.resource` prefix
+- Routes: `core.roles.index`, `core.roles.create`
+- Permissions: `core.roles.view/create/update/delete`
 
-**Dependencies:** Organizations
-
-**Future use:** All apps need user management. The Users module provides a complete, extensible user entity that app modules can attach domain-specific data to.
+**Dependencies:** spatie/laravel-permission ^6.0
 
 ---
 
-## Roles
+## Permissions ✅ LIVE
 
-**Purpose:** Defines named roles that group permissions together.
+**Path:** `Modules/Permissions/`
+**Priority:** 21
+**Purpose:** Read-only listing of all platform permissions, grouped by module.
 
-**Responsibilities:**
-- Create and manage roles scoped to an organization
-- Assign roles to users within an organization
-- List and filter roles
-- Default roles seeding (e.g., Admin, Member, Viewer)
+**Implemented:**
 
-**Main entities:** `Role`, `UserRole` (pivot)
+- Livewire List: groups `Spatie\Permission\Models\Permission` by first segment of name (e.g., `core`)
+- Routes: `core.permissions.index`
+- Permissions: `core.permissions.view/create`
 
-**Dependencies:** Organizations, Users
-
-**Future use:** Apps define their own role sets on top of the Core roles infrastructure. ScheduleHub may add a "Scheduler" role; Workforce may add "HR Manager".
+**Dependencies:** spatie/laravel-permission ^6.0
 
 ---
 
-## Permissions
+## Menu ✅ LIVE
 
-**Purpose:** Defines fine-grained permissions and maps them to roles.
+**Path:** `Modules/Menu/`
+**Priority:** 30
+**Purpose:** Config-driven navigation filtered by user permissions.
 
-**Responsibilities:**
-- Seed and register all platform permissions
-- Assign permissions to roles
-- Check user permissions via Gate integration
-- Sync permissions when roles change
+**Implemented:**
 
-**Main entities:** `Permission`, `RolePermission` (pivot)
+- `config/menu.php` — defines 3 groups: Platform (Dashboard), Core (Organizations, Users), Access Control (Roles, Permissions)
+- `MenuService::forUser()` — filters groups/items by `auth()->user()->can($permission)` with graceful fallback
+- Registered as a singleton in `MenuServiceProvider`
+- Sidebar reads `MenuService` via `app(\Modules\Menu\Services\MenuService::class)->forUser()`
 
-**Dependencies:** Roles
+**No database tables** — config-driven only.
 
-**Future use:** Permission strings are namespaced by scope (`core.*`, `schedulehub.*`). App modules register their own permissions during boot, which are then assignable to roles.
-
----
-
-## Menu
-
-**Purpose:** Manages the navigation menu dynamically based on user permissions.
-
-**Responsibilities:**
-- Define menu items (label, icon, route, permission gate)
-- Order and group menu items
-- Resolve the active menu for the current user and organization
-- Support nested (hierarchical) menu structures
-
-**Main entities:** `MenuItem`, `MenuGroup`
-
-**Dependencies:** Permissions
-
-**Future use:** App modules register their own menu items during boot. The Menu module assembles the final navigation tree at runtime, showing only what the user is permitted to see.
+**Dependencies:** spatie/laravel-permission (for permission checks)
 
 ---
 
-## Settings
+## SharedUI ✅ LIVE
 
-**Purpose:** Stores and retrieves configuration values at the organization or global level.
+**Path:** `Modules/SharedUI/`
+**Priority:** 40
+**Purpose:** Anonymous Blade component library used by all module views.
 
-**Responsibilities:**
-- Key-value settings storage with typed values
-- Organization-scoped overrides of global defaults
-- Settings UI for administrators
-- Accessor helper (e.g., `setting('app.name')`)
+**Implemented:**
 
-**Main entities:** `Setting` (key, value, scope, organization_id)
+- `Blade::anonymousComponentPath()` registers components under the `ui` prefix
+- Usage: `<x-ui::page-header />`, `<x-ui::card />`, `<x-ui::empty-state />`, `<x-ui::alert />`
+- Components: `page-header` (title, description, backRoute, actions slot), `card` (title, padding), `empty-state` (title, description, actions slot), `alert` (type: info/success/warning/error)
 
-**Dependencies:** Organizations
+**No database tables.**
 
-**Future use:** Each app module registers its own settings keys. The Settings module provides a unified UI and API for all of them. Users configure `notifications.email.enabled` in the same interface as `schedulehub.booking.buffer_minutes`.
-
----
-
-## Notifications
-
-**Purpose:** Sends and tracks notifications to users via multiple channels.
-
-**Responsibilities:**
-- Queue and dispatch email, in-app, and push notifications
-- User notification preferences (opt-in/out per channel)
-- Notification history and read/unread state
-- Template management for email content
-
-**Main entities:** `Notification`, `NotificationPreference`
-
-**Dependencies:** Users, Settings (for channel configuration)
-
-**Future use:** App modules trigger notifications via the Notifications module. A booking confirmation in ScheduleHub uses the same notification infrastructure as a stock alert in Stocky.
+**Dependencies:** Livewire Flux (uses `flux:*` components internally)
 
 ---
 
-## AuditLog
+## Planned Modules
 
-**Purpose:** Records significant user actions for compliance and debugging.
+The following modules are designed and documented but not yet implemented:
 
-**Responsibilities:**
-- Log create/update/delete events on key models
-- Record actor (user), target (model), action type, and before/after values
-- Expose a filterable audit log UI for administrators
-- Configurable retention policy
+| Module | Priority | Description |
+| --- | --- | --- |
+| Settings | 50 | Key-value config at global or organization scope |
+| Notifications | 60 | Multi-channel notification system with user preferences |
+| AuditLog | 70 | Immutable record of significant platform events |
+| Files | 80 | Unified file upload and management layer |
+| Dashboard | 90 | Configurable landing screen with module widgets |
+| FeatureFlags | 100 | Runtime feature toggling per organization |
 
-**Main entities:** `AuditEntry` (user_id, model_type, model_id, action, payload, ip_address, created_at)
-
-**Dependencies:** Users
-
-**Future use:** App modules opt their models into auditing. The audit log viewer in the Core admin panel shows activity across all modules in a unified timeline.
-
----
-
-## Files
-
-**Purpose:** Manages file uploads and serves them through a consistent API.
-
-**Responsibilities:**
-- Upload files to configured disk (local or S3)
-- Track file metadata (name, mime, size, uploader, organization)
-- Generate signed temporary URLs for private files
-- Associate files with any model (polymorphic)
-- Enforce file type and size restrictions
-
-**Main entities:** `File` (path, disk, mime_type, size, organization_id, uploaded_by, fileable_type, fileable_id)
-
-**Dependencies:** Organizations, Users
-
-**Future use:** Any module that needs file handling (profile avatars, document attachments, logos) uses the Files module rather than implementing its own upload logic.
-
----
-
-## SharedUI
-
-**Purpose:** Provides a library of reusable Blade/Livewire/Flux components and layouts.
-
-**Responsibilities:**
-- Base page layouts (sidebar, topbar, content area)
-- Reusable UI components: data tables, modals, confirmation dialogs, empty states
-- Flash message and toast notification components
-- Form components: text inputs, selects, toggles, date pickers
-- Consistent styling via Tailwind/Flux tokens
-
-**Main entities:** Blade components only (no database tables)
-
-**Dependencies:** None (pure UI layer)
-
-**Future use:** Every module's Livewire views extend SharedUI layouts and use SharedUI components. App families inherit the full UI system without rebuilding it.
-
----
-
-## Dashboard
-
-**Purpose:** Provides the main authenticated landing screen with summary widgets.
-
-**Responsibilities:**
-- Render a configurable grid of dashboard widgets
-- Each widget is a self-contained Livewire component
-- Widgets pull data from other Core modules (users count, recent audit log, etc.)
-- Role-based widget visibility
-
-**Main entities:** `DashboardWidget` configuration (no separate table; widgets are code-defined)
-
-**Dependencies:** Users, Organizations, AuditLog, FeatureFlags
-
-**Future use:** App modules register their own widgets (e.g., upcoming bookings for ScheduleHub, low stock alerts for Stocky). The Dashboard assembles them into a unified view.
-
----
-
-## FeatureFlags
-
-**Purpose:** Controls feature availability at the organization or global level without deployments.
-
-**Responsibilities:**
-- Define boolean feature flags with default values
-- Override flags per organization
-- Expose a management UI for administrators
-- Integrate with Livewire components to show/hide features at runtime
-
-**Main entities:** `FeatureFlag` (key, default_enabled, description), `OrganizationFeatureFlag` (pivot with override value)
-
-**Dependencies:** Organizations
-
-**Future use:** App modules ship features behind flags. During rollout, flags can be enabled for a specific organization before being globally released. Flags are the deployment mechanism for incremental feature launches.
+See [roadmap.md](roadmap.md) for the phased build plan.

@@ -1,0 +1,15 @@
+{
+    "name": "platform-core/roles",
+    "description": "Platform Core — Roles module",
+    "authors": [{"name": "Platform Core", "email": "dev@platform.local"}],
+    "extra": {"laravel": {"providers": [], "aliases": {}}},
+    "autoload": {
+        "psr-4": {
+            "Modules\\Roles\\": "app/",
+            "Modules\\Roles\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {"Modules\\Roles\\Tests\\": "tests/"}
+    }
+}
