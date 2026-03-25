@@ -127,8 +127,23 @@ Runs all registered seeders.
 
 ```bash
 php artisan db:seed
-php artisan db:seed --class=OrganizationsDatabaseSeeder
+php artisan db:seed --class=RolesAndPermissionsSeeder
 ```
+
+The `RolesAndPermissionsSeeder` is idempotent — safe to run multiple times. It creates 5 roles and 15 `core.*` permissions using `firstOrCreate`.
+
+---
+
+### `php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"`
+
+Publishes spatie/laravel-permission config and migration.
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
+```
+
+**Use when:** Setting up the project for the first time. Required before `db:seed` will work for roles and permissions.
 
 ---
 

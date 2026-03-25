@@ -39,6 +39,22 @@
             </flux:field>
         </div>
 
+        @if($organization)
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 space-y-5">
+            <flux:heading size="lg">{{ __('Status') }}</flux:heading>
+
+            <flux:field>
+                <flux:label for="status">{{ __('Status') }}</flux:label>
+                <flux:select id="status" wire:model="status">
+                    <option value="active">{{ __('Active') }}</option>
+                    <option value="suspended">{{ __('Suspended') }}</option>
+                    <option value="archived">{{ __('Archived') }}</option>
+                </flux:select>
+                <flux:error name="status" />
+            </flux:field>
+        </div>
+        @endif
+
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 space-y-5">
             <flux:heading size="lg">{{ __('Contact') }}</flux:heading>
 

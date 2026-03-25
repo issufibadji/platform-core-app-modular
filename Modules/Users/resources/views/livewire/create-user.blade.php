@@ -34,22 +34,34 @@
             @endif
         </div>
 
-        @if(!$user)
-            <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 space-y-5">
-                <flux:heading size="lg">{{ __('Organization') }}</flux:heading>
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 space-y-5">
+            <flux:heading size="lg">{{ __('Access') }}</flux:heading>
 
-                <flux:field>
-                    <flux:label for="organization_id">{{ __('Assign to Organization') }}</flux:label>
-                    <flux:select id="organization_id" wire:model="organization_id">
-                        <option value="">{{ __('None') }}</option>
-                        @foreach($organizations as $org)
-                            <option value="{{ $org->id }}">{{ $org->name }}</option>
-                        @endforeach
-                    </flux:select>
-                    <flux:description>{{ __('Optional. User can be assigned to an organization later.') }}</flux:description>
-                </flux:field>
-            </div>
-        @endif
+            <flux:field>
+                <flux:label for="role">{{ __('Role') }}</flux:label>
+                <flux:select id="role" wire:model="role">
+                    <option value="">{{ __('No role') }}</option>
+                    @foreach($roles as $r)
+                        <option value="{{ $r }}">{{ $r }}</option>
+                    @endforeach
+                </flux:select>
+                <flux:description>{{ __('Platform role assigned to this user.') }}</flux:description>
+                <flux:error name="role" />
+            </flux:field>
+
+            @if(!$user)
+            <flux:field>
+                <flux:label for="organization_id">{{ __('Organization') }}</flux:label>
+                <flux:select id="organization_id" wire:model="organization_id">
+                    <option value="">{{ __('None') }}</option>
+                    @foreach($organizations as $org)
+                        <option value="{{ $org->id }}">{{ $org->name }}</option>
+                    @endforeach
+                </flux:select>
+                <flux:description>{{ __('Optional. Assign user to an organization at creation time.') }}</flux:description>
+            </flux:field>
+            @endif
+        </div>
 
         <div class="flex justify-end gap-3">
             <flux:button variant="ghost" href="{{ route('core.users.index') }}" wire:navigate>

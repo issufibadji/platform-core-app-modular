@@ -30,6 +30,9 @@ class CreateOrganization extends Component
     #[Rule('nullable|string|max:10')]
     public string $locale = '';
 
+    #[Rule('nullable|string|in:active,suspended,archived')]
+    public string $status = 'active';
+
     public bool $slugManuallyEdited = false;
 
     public function mount(?Organization $organization = null): void
@@ -42,6 +45,7 @@ class CreateOrganization extends Component
             $this->phone     = $organization->phone ?? '';
             $this->timezone  = $organization->timezone ?? '';
             $this->locale    = $organization->locale ?? '';
+            $this->status    = $organization->status->value;
             $this->slugManuallyEdited = true;
         }
     }
@@ -74,6 +78,7 @@ class CreateOrganization extends Component
         $data = [
             'name'     => $this->name,
             'slug'     => $this->slug ?: null,
+            'status'   => $this->status ?: 'active',
             'email'    => $this->email ?: null,
             'phone'    => $this->phone ?: null,
             'timezone' => $this->timezone ?: null,

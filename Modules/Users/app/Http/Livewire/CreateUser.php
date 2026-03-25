@@ -5,6 +5,7 @@ namespace Modules\Users\Http\Livewire;
 use App\Models\User;
 use Livewire\Component;
 use Modules\Organizations\Models\Organization;
+use Spatie\Permission\Models\Role;
 
 class CreateUser extends Component
 {
@@ -15,6 +16,7 @@ class CreateUser extends Component
     public string $password = '';
     public string $password_confirmation = '';
     public ?int $organization_id = null;
+    public string $role = '';
 
     public function mount(?User $user = null): void
     {
@@ -22,6 +24,7 @@ class CreateUser extends Component
             $this->user  = $user;
             $this->name  = $user->name;
             $this->email = $user->email;
+            $this->role  = $user->getRoleNames()->first() ?? '';
         }
     }
 
@@ -30,6 +33,7 @@ class CreateUser extends Component
         $rules = [
             'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email' . ($this->user ? ",{$this->user->id}" : ''),
+            'role'  => 'nullable|string|exists:roles,name',
         ];
 
         if (! $this->user) {
@@ -41,12 +45,19 @@ class CreateUser extends Component
 
         if ($this->user) {
             $this->user->update(['name' => $this->name, 'email' => $this->email]);
+            if ($this->role) {
+                $this->user->syncRoles([$this->role]);
+            }
         } else {
             $user = User::create([
                 'name'     => $this->name,
                 'email'    => $this->email,
                 'password' => bcrypt($this->password),
             ]);
+
+            if ($this->role) {
+                $user->assignRole($this->role);
+            }
 
             if ($this->organization_id) {
                 $user->organizations()->attach($this->organization_id, [
@@ -63,6 +74,7 @@ class CreateUser extends Component
     {
         return view('users::livewire.create-user', [
             'organizations' => Organization::active()->orderBy('name')->get(),
+            'roles'         => Role::orderBy('name')->pluck('name'),
         ]);
     }
 }

@@ -109,55 +109,65 @@ enum UserRole: string
 
 ## Livewire Components
 
-Livewire class names are **PascalCase verb+noun or noun** patterns. They live under `app/Http/Livewire/[Feature]/`.
+Livewire class names are **PascalCase verb+noun** patterns. They live under `app/Http/Livewire/` inside the module.
 
 ```php
-// Class
-Modules\Organizations\Http\Livewire\Organizations\ListOrganizations
-Modules\Organizations\Http\Livewire\Organizations\CreateOrganization
-Modules\Organizations\Http\Livewire\Organizations\EditOrganization
+// Class location
+Modules\Organizations\Http\Livewire\ListOrganizations
+Modules\Organizations\Http\Livewire\CreateOrganization
 
-// Blade view (auto-resolved by Livewire)
-organizations::livewire.organizations.list-organizations
+// Registered name (dot notation — never :: notation)
+'organizations.list-organizations'
+'organizations.create-organization'
+
+// Blade view namespace
+organizations::livewire.list-organizations
 ```
 
-Route-to-component registration (Full-Page Livewire):
+**Registration pattern** (in the module's service provider `boot()`):
 
 ```php
-Route::get('/organizations', ListOrganizations::class)->name('organizations.index');
+Livewire::component('organizations.list-organizations', ListOrganizations::class);
+```
+
+**Embedding pattern** (in the page Blade view, not directly in routes):
+
+```blade
+<livewire:organizations.list-organizations />
 ```
 
 ## Routes
 
-Route names use **dot-separated** `[module].[resource].[action]` format.
+Route names use **dot-separated** `[scope].[resource].[action]` format. Core modules use `core.` prefix.
+
+```text
+core.organizations.index
+core.organizations.create
+core.organizations.edit
+
+core.users.index
+core.users.create
+core.users.edit
+
+core.roles.index
+core.roles.create
+
+core.permissions.index
+```
+
+API routes are prefixed with `api.`:
 
 ```
-organizations.index
-organizations.create
-organizations.edit
-organizations.store
-organizations.update
-organizations.destroy
-
-users.index
-users.show
-roles.assign
-```
-
-API route names are prefixed with `api.`:
-
-```
-api.organizations.index
-api.users.show
+api.core.organizations.index
 ```
 
 ## Permissions
 
 Permission strings follow: `[scope].[resource].[action]`
 
-**Core scope permissions:**
+**Seeded Core permissions (15 total):**
 
-```
+```text
 core.organizations.view
 core.organizations.create
 core.organizations.update
@@ -167,21 +177,16 @@ core.users.view
 core.users.create
 core.users.update
 core.users.delete
-core.users.invite
 
 core.roles.view
-core.roles.assign
-core.roles.revoke
+core.roles.create
+core.roles.update
+core.roles.delete
 
-core.permissions.manage
+core.permissions.view
+core.permissions.create
 
-core.menu.manage
-core.settings.manage
-core.audit_log.view
-core.feature_flags.manage
-core.notifications.manage
-core.files.upload
-core.files.delete
+core.menu.view
 ```
 
 **App-scoped permissions** (for future app families):

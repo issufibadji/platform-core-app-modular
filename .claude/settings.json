@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l app/Models/User.php)",
+      "Bash(php -l Modules/Menu/app/Providers/MenuServiceProvider.php)",
+      "Bash(php -l Modules/Menu/app/Services/MenuService.php)",
+      "Bash(php -l Modules/Users/app/Http/Livewire/CreateUser.php)",
+      "Bash(php -l Modules/Roles/app/Http/Livewire/CreateRole.php)",
+      "Bash(php -l Modules/Permissions/app/Http/Livewire/ListPermissions.php)",
+      "Bash(php -l Modules/Roles/app/Http/Livewire/ListRoles.php)",
+      "Bash(php -l Modules/Users/app/Http/Livewire/ListUsers.php)",
+      "Bash(php -l Modules/SharedUI/app/Providers/SharedUIServiceProvider.php)",
+      "Bash(php -l database/seeders/RolesAndPermissionsSeeder.php)",
+      "Read(//c/Users/User/.claude/projects/c--Dev-DevWeb-platform-core-app-modular/memory/**)",
+      "Bash(composer dump-autoload:*)",
+      "Bash(php -m)",
+      "Bash(php -i)",
+      "Bash(mysql -u root -e \"SHOW DATABASES;\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''require'''', {}\\), indent=2\\)\\)\")",
+      "Bash(composer require:*)",
+      "Bash(1:*)",
+      "Bash(php -l Modules/Organizations/app/Http/Livewire/CreateOrganization.php)"
+    ]
+  }
+}

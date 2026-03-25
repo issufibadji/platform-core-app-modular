@@ -18,6 +18,7 @@ class MenuServiceProvider extends ModuleServiceProvider
     {
         parent::register();
 
+        $this->mergeConfigFrom(module_path('Menu', 'config/menu.php'), 'menu');
         $this->app->singleton(MenuService::class);
     }
 }

@@ -4,8 +4,8 @@ Every module under `Modules/` follows the same internal structure. This consiste
 
 ## Full Structure
 
-```
-Modules/Core/Organizations/
+```text
+Modules/Organizations/
 ├── app/
 │   ├── Actions/
 │   ├── DTOs/
