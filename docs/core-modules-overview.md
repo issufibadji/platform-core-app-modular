@@ -83,7 +83,7 @@ The following modules are currently implemented and live. The remaining modules 
 
 **Implemented:**
 
-- `config/menu.php` — defines 3 groups: Platform (Dashboard), Core (Organizations, Users), Access Control (Roles, Permissions)
+- `config/menu.php` — defines 4 groups: Platform (Dashboard), Core (Organizations, Users), Access Control (Roles, Permissions), System (Settings, Feature Flags, Audit Log, Notifications, Files)
 - `MenuService::forUser()` — filters groups/items by `auth()->user()->can($permission)` with graceful fallback
 - Registered as a singleton in `MenuServiceProvider`
 - Sidebar reads `MenuService` via `app(\Modules\Menu\Services\MenuService::class)->forUser()`
@@ -197,13 +197,47 @@ The following modules are currently implemented and live. The remaining modules 
 
 ---
 
+## Dashboard ✅ LIVE
+
+**Path:** `Modules/Dashboard/`
+**Priority:** 2
+**Purpose:** Platform home screen with summary widgets and quick navigation.
+
+**Implemented:**
+
+- `DashboardIndex` Livewire component with 4 summary cards: Organizations, Users, Unread Notifications, Active Feature Flags
+- All counts use `class_exists()` guards — safe even if a module is absent
+- Quick links section rendered with `@can` gates — links hidden when permission is absent
+- Recent Activity section showing 7-day audit event count
+- Route: `core.dashboard.index`
+- Permission: `core.dashboard.view`
+
+**Dependencies:** Organizations, AuditLog, Notifications, FeatureFlags (all optional/graceful)
+
+---
+
+## FeatureFlags ✅ LIVE
+
+**Path:** `Modules/FeatureFlags/`
+**Priority:** 19
+**Purpose:** Enable/disable named features globally or per organization.
+
+**Implemented:**
+
+- `feature_flags` table: `id`, `key`, `description`, `organization_id` (nullable), `module`, `is_enabled`, timestamps
+- Unique constraint: `(key, organization_id)`
+- `FeatureFlag` model with `global()`, `enabled()`, `forOrganization()` scopes
+- `FeatureFlagService` singleton: `isEnabled()`, `enable()`, `disable()`, `set()`, `has()`, `forget()`
+- Resolution: org-specific override → global fallback → `false`
+- Livewire `ListFeatureFlags`: paginated, search, status filter, inline toggle
+- Livewire `CreateFeatureFlag`: key (validated regex), module, description, initial state
+- Routes: `core.featureflags.index`, `core.featureflags.create`
+- Permissions: `core.featureflags.view`, `core.featureflags.create`, `core.featureflags.update`
+
+**Dependencies:** Organizations (optional FK)
+
+---
+
 ## Planned Modules
 
-The following modules are not yet implemented:
-
-| Module | Priority | Description |
-| --- | --- | --- |
-| Dashboard | 90 | Configurable landing screen with module widgets |
-| FeatureFlags | 100 | Runtime feature toggling per organization |
-
-See [roadmap.md](roadmap.md) for the phased build plan.
+All planned modules from Phase 1 and Phase 2 are now implemented. See [roadmap.md](roadmap.md) for next phases.

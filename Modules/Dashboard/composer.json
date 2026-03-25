@@ -1,0 +1,28 @@
+{
+    "name": "platform-core/dashboard",
+    "description": "Platform Core — Dashboard module",
+    "authors": [
+        {
+            "name": "Platform Core",
+            "email": "dev@platform.local"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Dashboard\\": "app/",
+            "Modules\\Dashboard\\Database\\Factories\\": "database/factories/",
+            "Modules\\Dashboard\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Dashboard\\Tests\\": "tests/"
+        }
+    }
+}

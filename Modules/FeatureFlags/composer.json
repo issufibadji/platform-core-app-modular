@@ -1,0 +1,28 @@
+{
+    "name": "platform-core/featureflags",
+    "description": "Platform Core — FeatureFlags module",
+    "authors": [
+        {
+            "name": "Platform Core",
+            "email": "dev@platform.local"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\FeatureFlags\\": "app/",
+            "Modules\\FeatureFlags\\Database\\Factories\\": "database/factories/",
+            "Modules\\FeatureFlags\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\FeatureFlags\\Tests\\": "tests/"
+        }
+    }
+}

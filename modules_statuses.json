@@ -9,5 +9,7 @@
     "Settings": true,
     "AuditLog": true,
     "Notifications": true,
-    "Files": true
+    "Files": true,
+    "Dashboard": true,
+    "FeatureFlags": true
 }

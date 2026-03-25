@@ -57,6 +57,14 @@ class RolesAndPermissionsSeeder extends Seeder
             // Files
             'core.files.view',
             'core.files.upload',
+
+            // Dashboard
+            'core.dashboard.view',
+
+            // FeatureFlags
+            'core.featureflags.view',
+            'core.featureflags.create',
+            'core.featureflags.update',
         ];
 
         foreach ($permissions as $name) {
@@ -75,7 +83,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // super-admin gets everything
         $superAdmin->syncPermissions(Permission::all());
 
-        // owner gets org + user management + settings + files
+        // owner gets org + user management + settings + files + dashboard + flags
         $owner->syncPermissions([
             'core.organizations.view', 'core.organizations.create',
             'core.organizations.update', 'core.organizations.delete',
@@ -85,6 +93,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'core.auditlog.view',
             'core.notifications.view',
             'core.files.view', 'core.files.upload',
+            'core.dashboard.view',
+            'core.featureflags.view', 'core.featureflags.create', 'core.featureflags.update',
         ]);
 
         // manager gets most of owner minus delete
@@ -92,6 +102,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'core.organizations.view', 'core.organizations.update',
             'core.users.view', 'core.users.create', 'core.users.update',
             'core.roles.view', 'core.permissions.view', 'core.menu.view',
+            'core.dashboard.view',
+            'core.notifications.view',
+            'core.files.view', 'core.files.upload',
         ]);
 
         // operator gets view + create
@@ -99,6 +112,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'core.organizations.view',
             'core.users.view', 'core.users.create',
             'core.menu.view',
+            'core.dashboard.view',
+            'core.notifications.view',
         ]);
 
         // viewer gets view only
@@ -106,6 +121,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'core.organizations.view',
             'core.users.view',
             'core.menu.view',
+            'core.dashboard.view',
+            'core.notifications.view',
         ]);
 
         $this->command->info('✔  Roles and permissions seeded successfully.');

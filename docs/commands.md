@@ -1,241 +1,396 @@
 # Commands Reference
 
-## Module Management
+---
 
-### `php artisan module:list`
+## Setup Completo — Passo a Passo
 
-Lists all registered modules with their status (Enabled/Disabled).
+### Ambiente Local (primeira vez)
+
+Execute os comandos abaixo **em ordem**:
 
 ```bash
+# 1. Instalar dependências PHP
+composer install
+
+# 2. Copiar arquivo de ambiente e gerar chave
+cp .env.example .env
+php artisan key:generate
+
+# 3. Configurar banco de dados no .env
+#    DB_CONNECTION=mysql
+#    DB_HOST=127.0.0.1
+#    DB_PORT=3306
+#    DB_DATABASE=platform_core_app
+#    DB_USERNAME=root
+#    DB_PASSWORD=
+
+# 4. Publicar config e migrations do spatie/laravel-permission
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+
+# 5. Rodar todas as migrations (base + módulos)
+php artisan migrate
+
+# 6. Criar link para storage público (necessário para uploads)
+php artisan storage:link
+
+# 7. Rodar seeders (roles, permissions, super-admin)
+php artisan db:seed
+
+# 8. Instalar dependências JS e compilar assets
+npm install
+npm run build
+
+# 9. Iniciar servidor de desenvolvimento
+composer run dev
+```
+
+> O comando `composer run dev` inicia `php artisan serve`, `npm run dev`, `php artisan queue:listen` e `php artisan pail` ao mesmo tempo.
+
+---
+
+### Ambiente de Produção (deploy)
+
+```bash
+# 1. Instalar dependências PHP (sem dev, otimizado)
+composer install --no-dev --optimize-autoloader
+
+# 2. Configurar o .env de produção (copiar e editar manualmente)
+cp .env.example .env
+php artisan key:generate
+
+# 3. Publicar config do spatie (apenas na primeira vez)
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+
+# 4. Rodar migrations em produção
+php artisan migrate --force
+
+# 5. Rodar seeders
+php artisan db:seed --force
+
+# 6. Criar link do storage
+php artisan storage:link
+
+# 7. Compilar assets para produção
+npm ci
+npm run build
+
+# 8. Cachear configurações, rotas e views
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
+
+# 9. Limpar cache de permissões do spatie (se necessário)
+php artisan permission:cache-reset
+```
+
+> Em produção, **nunca** use `migrate:fresh` — isso apaga todos os dados.
+
+---
+
+### Após adicionar um novo módulo
+
+```bash
+# Regenerar o autoloader com o novo module
+composer dump-autoload -o
+
+# Rodar as migrations do novo módulo
+php artisan migrate
+
+# Re-rodar seeders se o módulo adicionou novas permissões
+php artisan db:seed --class=RolesAndPermissionsSeeder
+
+# Verificar se o módulo está carregado
 php artisan module:list
 ```
 
-**Use when:** Verifying that a newly created module is recognized, or checking which modules are active before running migrations.
-
 ---
 
-### `php artisan module:make [ModuleName]`
+### Atualizar permissões sem resetar dados
 
-Scaffolds a new module under `Modules/[ModuleName]/` with the default structure.
-
-```bash
-php artisan module:make Organizations
-php artisan module:make --plain Organizations   # skip default stub files
-```
-
-**Use when:** Starting a new module. After scaffolding, move it to the correct path (e.g., `Modules/Core/Organizations/`) if it should be part of the Core family.
-
-> Note: The default scaffold may generate more boilerplate than needed. Review and trim generated files to match the project's actual structure.
-
----
-
-### `php artisan module:enable [ModuleName]`
-
-Enables a disabled module so it is loaded on boot.
+O `RolesAndPermissionsSeeder` é idempotente — pode ser executado quantas vezes precisar:
 
 ```bash
-php artisan module:enable Organizations
-```
-
----
-
-### `php artisan module:disable [ModuleName]`
-
-Disables a module without deleting it.
-
-```bash
-php artisan module:disable FeatureFlags
-```
-
-**Use when:** Temporarily deactivating a module in an environment (e.g., disabling Dashboard in a staging environment).
-
----
-
-### `php artisan module:migrate [ModuleName]`
-
-Runs migrations for a specific module only.
-
-```bash
-php artisan module:migrate Organizations
-php artisan module:migrate --force Organizations   # force in production
-```
-
-**Use when:** You've added a new migration to a module and want to run it in isolation without touching other modules or the base migrations.
-
----
-
-### `php artisan module:seed [ModuleName]`
-
-Runs the seeder for a specific module.
-
-```bash
-php artisan module:seed Organizations
-```
-
----
-
-### `php artisan module:make-migration [migration_name] --module=[ModuleName]`
-
-Creates a migration file inside a module's `database/migrations/` directory.
-
-```bash
-php artisan module:make-migration create_organizations_table --module=Organizations
-php artisan module:make-migration add_domain_to_organizations_table --module=Organizations
-```
-
----
-
-### `php artisan module:make-model [ModelName] --module=[ModuleName]`
-
-Generates a model inside the specified module.
-
-```bash
-php artisan module:make-model Organization --module=Organizations
-```
-
----
-
-### `php artisan module:make-livewire [ComponentName] --module=[ModuleName]`
-
-Generates a Livewire component inside the specified module.
-
-```bash
-php artisan module:make-livewire Organizations/ListOrganizations --module=Organizations
-```
-
----
-
-## Database
-
-### `php artisan migrate`
-
-Runs all pending migrations from the base `database/migrations/` and all enabled modules.
-
-```bash
-php artisan migrate
-php artisan migrate --fresh          # drop all tables and re-run
-php artisan migrate --fresh --seed   # re-run and seed
-```
-
-**Use when:** After pulling new code that includes migrations, or setting up a fresh environment.
-
----
-
-### `php artisan db:seed`
-
-Runs all registered seeders.
-
-```bash
-php artisan db:seed
 php artisan db:seed --class=RolesAndPermissionsSeeder
 ```
 
-The `RolesAndPermissionsSeeder` is idempotent — safe to run multiple times. It creates 5 roles and 15 `core.*` permissions using `firstOrCreate`.
+Usa `firstOrCreate` internamente. Não duplica roles nem permissions já existentes.
 
 ---
 
-### `php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"`
-
-Publishes spatie/laravel-permission config and migration.
+### Resetar ambiente local (desenvolvimento)
 
 ```bash
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
-php artisan migrate
+# Apaga todas as tabelas e recria do zero
+php artisan migrate:fresh --seed
 ```
 
-**Use when:** Setting up the project for the first time. Required before `db:seed` will work for roles and permissions.
+> Use apenas em desenvolvimento. Destrói todos os dados.
 
 ---
 
-## Application Cache
+## Referência de Comandos
 
-### `php artisan optimize:clear`
+---
 
-Clears all cached files: config, routes, views, events, and compiled classes.
+### `composer install`
+
+Instala as dependências PHP definidas em `composer.json` e `composer.lock`.
 
 ```bash
-php artisan optimize:clear
+composer install                      # desenvolvimento (inclui pacotes dev)
+composer install --no-dev --optimize-autoloader   # produção
 ```
 
-**Use when:** Config or route changes are not taking effect, or after pulling code with modified `.env` or config files.
-
 ---
-
-### `php artisan config:cache`
-
-Compiles all config files into a single cached file for production performance.
-
-```bash
-php artisan config:cache
-```
-
-> Do **not** use in development — it prevents `.env` changes from taking effect without re-caching.
-
----
-
-### `php artisan route:cache`
-
-Caches all routes for faster resolution in production.
-
-```bash
-php artisan route:cache
-```
-
-> Do **not** use in development — new routes won't be recognized until cache is cleared.
-
----
-
-## Autoloading
 
 ### `composer dump-autoload -o`
 
-Regenerates the Composer autoloader with optimized class maps.
+Regenera o autoloader otimizado. **Obrigatório** sempre que um novo módulo for adicionado.
 
 ```bash
 composer dump-autoload -o
 ```
 
-**Use when:**
-- A new module's `composer.json` was added or modified.
-- A class is not found despite existing in the expected location.
-- After manually moving or renaming module directories.
+**Quando usar:**
 
-The `-o` flag generates an optimized (classmap) autoloader. Omit it in development if the rebuild is slow.
+- Novo módulo adicionado em `Modules/`
+- Classe não encontrada mesmo existindo no local correto
+- Após mover ou renomear diretórios de módulos
+
+O flag `-o` gera um classmap otimizado. Em desenvolvimento pode-se omitir para rebuild mais rápido.
 
 ---
 
-## Storage
+### `php artisan key:generate`
+
+Gera a `APP_KEY` no `.env`. Necessário uma única vez na configuração inicial.
+
+```bash
+php artisan key:generate
+```
+
+---
+
+### `php artisan vendor:publish`
+
+Publica arquivos de configuração e migrations de pacotes externos.
+
+```bash
+# spatie/laravel-permission (obrigatório na primeira vez)
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+```
+
+Gera:
+
+- `config/permission.php`
+- `database/migrations/xxxx_create_permission_tables.php`
+
+---
+
+### `php artisan migrate`
+
+Executa todas as migrations pendentes — base e todos os módulos habilitados.
+
+```bash
+php artisan migrate
+php artisan migrate --force                # forçar em produção
+php artisan migrate:fresh                  # apagar e recriar (dev only)
+php artisan migrate:fresh --seed           # apagar, recriar e seeder
+php artisan migrate:status                 # ver status de cada migration
+```
+
+---
+
+### `php artisan module:migrate [ModuleName]`
+
+Executa migrations de um módulo específico apenas.
+
+```bash
+php artisan module:migrate FeatureFlags
+php artisan module:migrate FeatureFlags --force
+```
+
+---
+
+### `php artisan db:seed`
+
+Executa todos os seeders registrados em `DatabaseSeeder`.
+
+```bash
+php artisan db:seed
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan db:seed --force   # produção
+```
+
+**Seeders disponíveis:**
+
+- `RolesAndPermissionsSeeder` — cria 5 roles, todas as permissões `core.*`, atribui `super-admin` ao primeiro usuário
+
+---
 
 ### `php artisan storage:link`
 
-Creates a symbolic link from `public/storage` to `storage/app/public`.
+Cria o symlink `public/storage → storage/app/public`. Necessário para uploads com disco `public`.
 
 ```bash
 php artisan storage:link
-php artisan storage:link --force   # overwrite existing symlink
+php artisan storage:link --force   # sobrescrever link existente
 ```
-
-**Use when:** Setting up a new environment. Required for any file uploads that should be publicly accessible.
 
 ---
 
-## Development Server
+### `php artisan optimize:clear`
+
+Limpa todos os caches: config, rotas, views, eventos e classes compiladas.
+
+```bash
+php artisan optimize:clear
+```
+
+**Quando usar:** Após alterações em `.env`, config ou rotas que não estão surtindo efeito.
+
+---
+
+### `php artisan config:cache` / `route:cache` / `view:cache`
+
+Compila e cacheia arquivos para performance em produção.
+
+```bash
+php artisan config:cache   # compilar configs
+php artisan route:cache    # compilar rotas
+php artisan view:cache     # compilar Blade
+php artisan event:cache    # compilar event listeners
+```
+
+> **Não usar em desenvolvimento** — impede que alterações em `.env` e código tenham efeito imediato.
+
+---
+
+### `php artisan module:list`
+
+Lista todos os módulos registrados com status (Enabled/Disabled).
+
+```bash
+php artisan module:list
+```
+
+---
+
+### `php artisan route:list`
+
+Lista todas as rotas registradas.
+
+```bash
+php artisan route:list
+php artisan route:list --name=core.   # filtrar por prefixo de nome
+php artisan route:list --path=core/   # filtrar por prefixo de URL
+```
+
+---
+
+### `php artisan module:make [ModuleName]`
+
+Scaffolda um novo módulo em `Modules/[ModuleName]/`.
+
+```bash
+php artisan module:make Dashboard
+php artisan module:make --plain Dashboard   # sem stubs extras
+```
+
+Após criar, executar `composer dump-autoload -o` para registrar o PSR-4 do novo módulo.
+
+---
+
+### `php artisan module:enable / module:disable`
+
+Habilita ou desabilita um módulo sem removê-lo.
+
+```bash
+php artisan module:enable FeatureFlags
+php artisan module:disable FeatureFlags
+```
+
+Altera `modules_statuses.json`. O módulo desabilitado não é carregado no boot.
+
+---
+
+### `php artisan permission:cache-reset`
+
+Limpa o cache de roles e permissions do spatie.
+
+```bash
+php artisan permission:cache-reset
+```
+
+**Quando usar:** Após atualizar permissões em produção ou após rodar seeders em ambiente com cache ativo.
+
+---
+
+## Assets
+
+### `npm install` / `npm ci`
+
+```bash
+npm install       # desenvolvimento (atualiza package-lock.json)
+npm ci            # produção / CI (respeita o lock file exatamente)
+```
+
+### `npm run dev`
+
+Inicia o servidor Vite com hot module replacement.
+
+```bash
+npm run dev
+```
+
+### `npm run build`
+
+Compila e minifica assets para produção.
+
+```bash
+npm run build
+```
+
+---
+
+## Desenvolvimento
 
 ### `composer run dev`
 
-Starts all development processes concurrently using the `dev` script defined in `composer.json`.
+Inicia todos os processos de desenvolvimento em paralelo.
 
 ```bash
 composer run dev
 ```
 
-Runs:
-- `php artisan serve` — web server at `http://localhost:8000`
-- `npm run dev` — Vite watcher for assets
-- `php artisan queue:listen` — queue worker
-- `php artisan pail` — real-time log viewer
+Executa simultaneamente:
 
-**Use when:** Starting a local development session. This replaces running each process manually.
+- `php artisan serve` — servidor em `http://localhost:8000`
+- `npm run dev` — Vite HMR
+- `php artisan queue:listen --tries=1` — worker de filas
+- `php artisan pail` — log viewer em tempo real
+
+---
+
+## Testes
+
+### `./vendor/bin/pest`
+
+Executa a suite de testes com Pest.
+
+```bash
+./vendor/bin/pest
+./vendor/bin/pest --filter OrganizationTest
+./vendor/bin/pest Modules/Organizations/tests/
+./vendor/bin/pest --coverage   # com cobertura (requer Xdebug ou pcov)
+```
+
+> Os testes usam o banco `platform_core_app_test` (MySQL). Criar antes de rodar:
+
+```bash
+php artisan tinker --execute="DB::statement('CREATE DATABASE IF NOT EXISTS platform_core_app_test')"
+```
 
 ---
 
@@ -243,46 +398,10 @@ Runs:
 
 ### `./vendor/bin/pint`
 
-Runs Laravel Pint (PHP CS Fixer) to auto-format code.
+Formata código PHP conforme o estilo do Laravel (PSR-12 + regras customizadas).
 
 ```bash
-./vendor/bin/pint                  # fix all files
-./vendor/bin/pint --test           # check without fixing
-./vendor/bin/pint Modules/Organizations/
+./vendor/bin/pint                    # corrigir todos os arquivos
+./vendor/bin/pint --test             # verificar sem corrigir
+./vendor/bin/pint Modules/Settings/  # escopo de um módulo
 ```
-
----
-
-### `./vendor/bin/pest`
-
-Runs the Pest test suite.
-
-```bash
-./vendor/bin/pest
-./vendor/bin/pest --filter OrganizationTest
-./vendor/bin/pest Modules/Organizations/tests/
-```
-
----
-
-## Assets
-
-### `npm run dev`
-
-Starts the Vite development server with hot module replacement.
-
-```bash
-npm run dev
-```
-
----
-
-### `npm run build`
-
-Compiles and minifies assets for production.
-
-```bash
-npm run build
-```
-
-**Use when:** Deploying to staging or production, or when testing the final compiled bundle locally.

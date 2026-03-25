@@ -1,0 +1,11 @@
+{
+    "name": "Dashboard",
+    "alias": "dashboard",
+    "description": "Platform home page with summary widgets and quick navigation.",
+    "keywords": [],
+    "priority": 2,
+    "providers": [
+        "Modules\\Dashboard\\Providers\\DashboardServiceProvider"
+    ],
+    "files": []
+}

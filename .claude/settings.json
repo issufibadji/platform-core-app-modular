@@ -21,7 +21,9 @@
       "Bash(1:*)",
       "Bash(php -l Modules/Organizations/app/Http/Livewire/CreateOrganization.php)",
       "Bash(grep -v \"^$\")",
-      "Bash(do sed:*)"
+      "Bash(do sed:*)",
+      "Bash(mkdir -p Modules/Dashboard/app/Providers Modules/Dashboard/app/Http/Controllers Modules/Dashboard/app/Http/Livewire Modules/Dashboard/resources/views/livewire Modules/Dashboard/routes)",
+      "Bash(mkdir -p Modules/FeatureFlags/app/Providers Modules/FeatureFlags/app/Http/Controllers Modules/FeatureFlags/app/Http/Livewire Modules/FeatureFlags/app/Models Modules/FeatureFlags/app/Services Modules/FeatureFlags/resources/views/livewire Modules/FeatureFlags/routes Modules/FeatureFlags/database/migrations)"
     ]
   }
 }

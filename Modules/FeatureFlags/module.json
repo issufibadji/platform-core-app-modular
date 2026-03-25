@@ -1,0 +1,11 @@
+{
+    "name": "FeatureFlags",
+    "alias": "featureflags",
+    "description": "Enable or disable features globally or per organization.",
+    "keywords": [],
+    "priority": 19,
+    "providers": [
+        "Modules\\FeatureFlags\\Providers\\FeatureFlagsServiceProvider"
+    ],
+    "files": []
+}
